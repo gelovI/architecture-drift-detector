@@ -1,22 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.2.21" apply false
 }
 
 group = "dev.archdrift"
 version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(kotlin("test"))
-}
-
-kotlin {
-    jvmToolchain(21)
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
