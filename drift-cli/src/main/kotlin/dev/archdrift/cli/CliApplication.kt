@@ -26,6 +26,12 @@ class CliApplication {
             )
         }
 
+        if (!sourceFile.fileName.toString().endsWith(".kt")) {
+            return listOf(
+                "Error: Input file must be a Kotlin source file: $sourceFile",
+            )
+        }
+
         val violations = DriftFileAnalyzer()
             .detect(sourceFile)
 

@@ -118,4 +118,25 @@ class CliApplicationTest {
             output,
         )
     }
+
+    @Test
+    fun `reports error when input file is not a Kotlin source file`() {
+        val sourceFile = Files.createTempFile(
+            "architecture-drift-",
+            ".txt",
+        )
+
+        val application = CliApplication()
+
+        val output = application.run(
+            arrayOf(sourceFile.toString()),
+        )
+
+        assertEquals(
+            listOf(
+                "Error: Input file must be a Kotlin source file: $sourceFile",
+            ),
+            output,
+        )
+    }
 }
