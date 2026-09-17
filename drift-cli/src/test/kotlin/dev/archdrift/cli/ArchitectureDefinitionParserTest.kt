@@ -90,4 +90,75 @@ class ArchitectureDefinitionParserTest {
             exception.message,
         )
     }
+
+    @Test
+    fun `rejects forbidden dependency with unknown target component`() {
+        val definition = """
+        component domain dev.shop.domain
+        forbid domain -> infrastructure
+    """.trimIndent()
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ArchitectureDefinitionParser()
+                .parse(definition)
+        }
+
+        assertEquals(
+            "Unknown component in forbidden dependency rule: infrastructure",
+            exception.message,
+        )
+    }
+
+    @Test
+    fun `rejects unknown architecture statement`() {
+        val definition = """
+        banana domain dev.shop.domain
+    """.trimIndent()
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ArchitectureDefinitionParser()
+                .parse(definition)
+        }
+
+        assertEquals(
+            "Unknown architecture statement: banana domain dev.shop.domain",
+            exception.message,
+        )
+    }
+
+    @Test
+    fun `rejects malformed component declaration`() {
+        val definition = """
+        component domain
+    """.trimIndent()
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ArchitectureDefinitionParser()
+                .parse(definition)
+        }
+
+        assertEquals(
+            "Invalid component declaration: component domain",
+            exception.message,
+        )
+    }
+
+    @Test
+    fun `rejects malformed forbidden dependency rule`() {
+        val definition = """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain infrastructure
+    """.trimIndent()
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ArchitectureDefinitionParser()
+                .parse(definition)
+        }
+
+        assertEquals(
+            "Invalid forbidden dependency rule: forbid domain infrastructure",
+            exception.message,
+        )
+    }
 }

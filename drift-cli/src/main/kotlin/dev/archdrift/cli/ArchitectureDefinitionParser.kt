@@ -12,16 +12,11 @@ class ArchitectureDefinitionParser {
             .map { it.trim() }
             .filter { it.isNotEmpty() }
 
+        validateStatements(lines)
+
         val components = lines
             .filter { it.startsWith("component ") }
-            .map { line ->
-                val parts = line.split(Regex("\\s+"))
-
-                Component(
-                    name = parts[1],
-                    packagePrefix = parts[2],
-                )
-            }
+            .map(::parseComponent)
 
         val componentsByName = components
             .associateBy { it.name }
@@ -29,30 +24,77 @@ class ArchitectureDefinitionParser {
         val rules = lines
             .filter { it.startsWith("forbid ") }
             .map { line ->
-                val parts = line.split(Regex("\\s+"))
-
-                val sourceComponentName = parts[1]
-                val targetComponentName = parts[3]
-
-                val sourceComponent = componentsByName[sourceComponentName]
-                    ?: throw IllegalArgumentException(
-                        "Unknown component in forbidden dependency rule: $sourceComponentName",
-                    )
-
-                val targetComponent = componentsByName[targetComponentName]
-                    ?: throw IllegalArgumentException(
-                        "Unknown component in forbidden dependency rule: $targetComponentName",
-                    )
-
-                ForbiddenDependencyRule(
-                    from = sourceComponent,
-                    to = targetComponent,
+                parseForbiddenDependencyRule(
+                    line = line,
+                    componentsByName = componentsByName,
                 )
             }
 
         return Architecture(
             components = components,
             rules = rules,
+        )
+    }
+
+    private fun validateStatements(lines: List<String>) {
+        lines.forEach { line ->
+            if (
+                !line.startsWith("component ") &&
+                !line.startsWith("forbid ")
+            ) {
+                throw IllegalArgumentException(
+                    "Unknown architecture statement: $line",
+                )
+            }
+        }
+    }
+
+    private fun parseComponent(line: String): Component {
+        val parts = line.split(Regex("\\s+"))
+
+        if (parts.size != 3) {
+            throw IllegalArgumentException(
+                "Invalid component declaration: $line",
+            )
+        }
+
+        return Component(
+            name = parts[1],
+            packagePrefix = parts[2],
+        )
+    }
+
+    private fun parseForbiddenDependencyRule(
+        line: String,
+        componentsByName: Map<String, Component>,
+    ): ForbiddenDependencyRule {
+        val parts = line.split(Regex("\\s+"))
+
+        if (
+            parts.size != 4 ||
+            parts[2] != "->"
+        ) {
+            throw IllegalArgumentException(
+                "Invalid forbidden dependency rule: $line",
+            )
+        }
+
+        val sourceComponentName = parts[1]
+        val targetComponentName = parts[3]
+
+        val sourceComponent = componentsByName[sourceComponentName]
+            ?: throw IllegalArgumentException(
+                "Unknown component in forbidden dependency rule: $sourceComponentName",
+            )
+
+        val targetComponent = componentsByName[targetComponentName]
+            ?: throw IllegalArgumentException(
+                "Unknown component in forbidden dependency rule: $targetComponentName",
+            )
+
+        return ForbiddenDependencyRule(
+            from = sourceComponent,
+            to = targetComponent,
         )
     }
 }
