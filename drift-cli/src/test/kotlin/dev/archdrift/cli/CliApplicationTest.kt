@@ -8,20 +8,22 @@ class CliApplicationTest {
 
     @Test
     fun `returns usage when no file argument is provided`() {
-        val application = CliApplication(
-            architecture = testArchitecture(),
-        )
+        val application = CliApplication()
 
         val result = application.run(emptyArray())
 
         assertEquals(
-            listOf("Usage: architecture-drift-detector <kotlin-file>"),
+            listOf(
+                "Usage: architecture-drift-detector <architecture-file> <kotlin-file>",
+            ),
             result.output,
         )
     }
 
     @Test
     fun `detects architecture drift for provided Kotlin file`() {
+        val architectureFile = testArchitectureFile()
+
         val sourceFile = Files.createTempFile(
             "architecture-drift-",
             ".kt",
@@ -30,22 +32,23 @@ class CliApplicationTest {
         Files.writeString(
             sourceFile,
             """
-            package dev.shop.domain.order
+                package dev.shop.domain.order
 
-            import dev.shop.infrastructure.Database
+                import dev.shop.infrastructure.Database
 
-            class OrderService(
-                private val database: Database,
-            )
-        """.trimIndent(),
+                class OrderService(
+                    private val database: Database,
+                )
+            """.trimIndent(),
         )
 
-        val application = CliApplication(
-            architecture = testArchitecture(),
-        )
+        val application = CliApplication()
 
         val result = application.run(
-            arrayOf(sourceFile.toString()),
+            arrayOf(
+                architectureFile.toString(),
+                sourceFile.toString(),
+            ),
         )
 
         assertEquals(
@@ -64,6 +67,8 @@ class CliApplicationTest {
 
     @Test
     fun `reports no architecture drift for allowed Kotlin file`() {
+        val architectureFile = testArchitectureFile()
+
         val sourceFile = Files.createTempFile(
             "architecture-drift-",
             ".kt",
@@ -72,18 +77,19 @@ class CliApplicationTest {
         Files.writeString(
             sourceFile,
             """
-            package dev.shop.domain.order
+                package dev.shop.domain.order
 
-            class OrderService
-        """.trimIndent(),
+                class OrderService
+            """.trimIndent(),
         )
 
-        val application = CliApplication(
-            architecture = testArchitecture(),
-        )
+        val application = CliApplication()
 
         val result = application.run(
-            arrayOf(sourceFile.toString()),
+            arrayOf(
+                architectureFile.toString(),
+                sourceFile.toString(),
+            ),
         )
 
         assertEquals(
@@ -101,12 +107,15 @@ class CliApplicationTest {
 
     @Test
     fun `reports error when Kotlin file does not exist`() {
-        val application = CliApplication(
-            architecture = testArchitecture(),
-        )
+        val architectureFile = testArchitectureFile()
+
+        val application = CliApplication()
 
         val result = application.run(
-            arrayOf("does-not-exist.kt"),
+            arrayOf(
+                architectureFile.toString(),
+                "does-not-exist.kt",
+            ),
         )
 
         assertEquals(
@@ -124,16 +133,19 @@ class CliApplicationTest {
 
     @Test
     fun `reports error when input path is not a file`() {
+        val architectureFile = testArchitectureFile()
+
         val sourceDirectory = Files.createTempDirectory(
             "architecture-drift-",
         )
 
-        val application = CliApplication(
-            architecture = testArchitecture(),
-        )
+        val application = CliApplication()
 
         val result = application.run(
-            arrayOf(sourceDirectory.toString()),
+            arrayOf(
+                architectureFile.toString(),
+                sourceDirectory.toString(),
+            ),
         )
 
         assertEquals(
@@ -146,17 +158,20 @@ class CliApplicationTest {
 
     @Test
     fun `reports error when input file is not a Kotlin source file`() {
+        val architectureFile = testArchitectureFile()
+
         val sourceFile = Files.createTempFile(
             "architecture-drift-",
             ".txt",
         )
 
-        val application = CliApplication(
-            architecture = testArchitecture(),
-        )
+        val application = CliApplication()
 
         val result = application.run(
-            arrayOf(sourceFile.toString()),
+            arrayOf(
+                architectureFile.toString(),
+                sourceFile.toString(),
+            ),
         )
 
         assertEquals(
@@ -164,6 +179,63 @@ class CliApplicationTest {
                 "Error: Input file must be a Kotlin source file: $sourceFile",
             ),
             result.output,
+        )
+    }
+
+    @Test
+    fun `loads architecture from provided architecture file`() {
+        val architectureFile = Files.createTempFile(
+            "architecture",
+            ".drift",
+        )
+
+        Files.writeString(
+            architectureFile,
+            """
+                component business com.acme.business
+                component persistence com.acme.persistence
+                forbid business -> persistence
+            """.trimIndent(),
+        )
+
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+                package com.acme.business.order
+
+                import com.acme.persistence.Database
+
+                class OrderService(
+                    private val database: Database,
+                )
+            """.trimIndent(),
+        )
+
+        val application = CliApplication()
+
+        val result = application.run(
+            arrayOf(
+                architectureFile.toString(),
+                sourceFile.toString(),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "Architecture drift detected:",
+                "com.acme.business.order.OrderService -> com.acme.persistence.Database",
+            ),
+            result.output,
+        )
+
+        assertEquals(
+            1,
+            result.exitCode,
         )
     }
 }

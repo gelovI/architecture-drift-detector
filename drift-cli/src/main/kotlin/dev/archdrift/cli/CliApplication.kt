@@ -2,28 +2,26 @@ package dev.archdrift.cli
 
 import java.nio.file.Files
 import java.nio.file.Path
-import dev.archdrift.core.Architecture
 
-class CliApplication(
-    private val architecture: Architecture,
-) {
+class CliApplication {
 
     fun run(args: Array<String>): CliResult {
-        if (args.isEmpty()) {
+        if (args.size < 2) {
             return CliResult(
                 output = listOf(
-                    "Usage: architecture-drift-detector <kotlin-file>",
+                    "Usage: architecture-drift-detector <architecture-file> <kotlin-file>",
                 ),
                 exitCode = 2,
             )
         }
 
-        val sourceFile = Path.of(args[0])
+        val architectureFile = Path.of(args[0])
+        val sourceFile = Path.of(args[1])
 
         if (Files.notExists(sourceFile)) {
             return CliResult(
                 output = listOf(
-                    "Error: Kotlin file does not exist: ${args[0]}",
+                    "Error: Kotlin file does not exist: ${args[1]}",
                 ),
                 exitCode = 2,
             )
@@ -46,6 +44,9 @@ class CliApplication(
                 exitCode = 2,
             )
         }
+
+        val architecture = ArchitectureFileLoader()
+            .load(architectureFile)
 
         val violations = DriftFileAnalyzer(
             architecture = architecture,
