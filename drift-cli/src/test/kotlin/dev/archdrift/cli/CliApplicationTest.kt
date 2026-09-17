@@ -1,6 +1,7 @@
 package dev.archdrift.cli
 
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -237,5 +238,119 @@ class CliApplicationTest {
             1,
             result.exitCode,
         )
+    }
+
+    @Test
+    fun `rejects missing architecture file`() {
+        val architectureFile = Path.of("missing-architecture.drift")
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+            package dev.shop.domain.order
+
+            class OrderService
+        """.trimIndent(),
+        )
+
+        val result = CliApplication()
+            .run(
+                arrayOf(
+                    architectureFile.toString(),
+                    sourceFile.toString(),
+                ),
+            )
+
+        assertEquals(
+            listOf(
+                "Error: Architecture file does not exist: $architectureFile",
+            ),
+            result.output,
+        )
+        assertEquals(2, result.exitCode)
+    }
+
+    @Test
+    fun `rejects architecture path that is not a file`() {
+        val architectureDirectory = Files.createTempDirectory(
+            "architecture",
+        )
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+            package dev.shop.domain.order
+
+            class OrderService
+        """.trimIndent(),
+        )
+
+        val result = CliApplication()
+            .run(
+                arrayOf(
+                    architectureDirectory.toString(),
+                    sourceFile.toString(),
+                ),
+            )
+
+        assertEquals(
+            listOf(
+                "Error: Architecture path is not a file: $architectureDirectory",
+            ),
+            result.output,
+        )
+        assertEquals(2, result.exitCode)
+    }
+
+    @Test
+    fun `rejects invalid architecture definition`() {
+        val architectureFile = Files.createTempFile(
+            "architecture",
+            ".drift",
+        )
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            architectureFile,
+            """
+            component domain
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+            package dev.shop.domain.order
+
+            class OrderService
+        """.trimIndent(),
+        )
+
+        val result = CliApplication()
+            .run(
+                arrayOf(
+                    architectureFile.toString(),
+                    sourceFile.toString(),
+                ),
+            )
+
+        assertEquals(
+            listOf(
+                "Error: Invalid architecture definition: Invalid component declaration: component domain",
+            ),
+            result.output,
+        )
+        assertEquals(2, result.exitCode)
     }
 }

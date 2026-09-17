@@ -18,6 +18,24 @@ class CliApplication {
         val architectureFile = Path.of(args[0])
         val sourceFile = Path.of(args[1])
 
+        if (Files.notExists(architectureFile)) {
+            return CliResult(
+                output = listOf(
+                    "Error: Architecture file does not exist: $architectureFile",
+                ),
+                exitCode = 2,
+            )
+        }
+
+        if (!Files.isRegularFile(architectureFile)) {
+            return CliResult(
+                output = listOf(
+                    "Error: Architecture path is not a file: $architectureFile",
+                ),
+                exitCode = 2,
+            )
+        }
+
         if (Files.notExists(sourceFile)) {
             return CliResult(
                 output = listOf(
@@ -45,8 +63,17 @@ class CliApplication {
             )
         }
 
-        val architecture = ArchitectureFileLoader()
-            .load(architectureFile)
+        val architecture = try {
+            ArchitectureFileLoader()
+                .load(architectureFile)
+        } catch (exception: IllegalArgumentException) {
+            return CliResult(
+                output = listOf(
+                    "Error: Invalid architecture definition: ${exception.message}",
+                ),
+                exitCode = 2,
+            )
+        }
 
         val violations = DriftFileAnalyzer(
             architecture = architecture,
