@@ -13,44 +13,43 @@ class KotlinSourceAnalyzer {
 
             val packageName = file.packageFqName.asString()
 
-            val sourceClass = file.declarations
+            file.declarations
                 .filterIsInstance<KtClass>()
-                .firstOrNull()
-                ?: return@use emptyList()
+                .flatMap { sourceClass ->
+                    val className = sourceClass.name
+                        ?: return@flatMap emptyList()
 
-            val className = sourceClass.name
-                ?: return@use emptyList()
+                    val qualifiedClassName = if (packageName.isEmpty()) {
+                        className
+                    } else {
+                        "$packageName.$className"
+                    }
 
-            val qualifiedClassName = if (packageName.isEmpty()) {
-                className
-            } else {
-                "$packageName.$className"
-            }
+                    val referencedNames = sourceClass
+                        .collectDescendantsOfType<KtNameReferenceExpression>()
+                        .map { it.getReferencedName() }
+                        .toSet()
 
-            val referencedNames = sourceClass
-                .collectDescendantsOfType<KtNameReferenceExpression>()
-                .map { it.getReferencedName() }
-                .toSet()
+                    file.importDirectives
+                        .mapNotNull { importDirective ->
+                            val importedFqName = importDirective.importedFqName
+                                ?.asString()
+                                ?: return@mapNotNull null
 
-            file.importDirectives
-                .mapNotNull { importDirective ->
-                    val importedFqName = importDirective.importedFqName
-                        ?.asString()
-                        ?: return@mapNotNull null
+                            val referencedName = importDirective.aliasName
+                                ?: importedFqName.substringAfterLast(".")
 
-                    val referencedName = importDirective.aliasName
-                        ?: importedFqName.substringAfterLast(".")
-
-                    importedFqName to referencedName
-                }
-                .filter { (_, referencedName) ->
-                    referencedName in referencedNames
-                }
-                .map { (importedFqName, _) ->
-                    Dependency(
-                        source = qualifiedClassName,
-                        target = importedFqName,
-                    )
+                            importedFqName to referencedName
+                        }
+                        .filter { (_, referencedName) ->
+                            referencedName in referencedNames
+                        }
+                        .map { (importedFqName, _) ->
+                            Dependency(
+                                source = qualifiedClassName,
+                                target = importedFqName,
+                            )
+                        }
                 }
         }
 }

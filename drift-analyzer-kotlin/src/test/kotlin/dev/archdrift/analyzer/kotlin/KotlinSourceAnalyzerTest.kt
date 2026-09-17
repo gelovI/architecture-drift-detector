@@ -155,4 +155,40 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `detects dependencies for multiple classes in same file`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+        import dev.shop.payment.PaymentGateway
+
+        class OrderService(
+            private val database: Database,
+        )
+
+        class PaymentService(
+            private val paymentGateway: PaymentGateway,
+        )
+    """.trimIndent()
+
+        val analyzer = KotlinSourceAnalyzer()
+
+        val dependencies = analyzer.analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                ),
+                Dependency(
+                    source = "dev.shop.domain.order.PaymentService",
+                    target = "dev.shop.payment.PaymentGateway",
+                ),
+            ),
+            dependencies,
+        )
+    }
 }
