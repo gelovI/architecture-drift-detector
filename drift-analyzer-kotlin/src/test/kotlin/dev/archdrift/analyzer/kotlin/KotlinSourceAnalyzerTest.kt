@@ -357,4 +357,29 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `detects dependency from Kotlin supertype`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Repository
+
+        class OrderRepository : Repository
+    """.trimIndent()
+
+        val analyzer = KotlinSourceAnalyzer()
+
+        val dependencies = analyzer.analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderRepository",
+                    target = "dev.shop.infrastructure.Repository",
+                ),
+            ),
+            dependencies,
+        )
+    }
 }
