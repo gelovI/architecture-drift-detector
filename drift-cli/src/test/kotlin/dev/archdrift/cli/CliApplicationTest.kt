@@ -8,7 +8,9 @@ class CliApplicationTest {
 
     @Test
     fun `returns usage when no file argument is provided`() {
-        val application = CliApplication()
+        val application = CliApplication(
+            architecture = testArchitecture(),
+        )
 
         val result = application.run(emptyArray())
 
@@ -38,7 +40,9 @@ class CliApplicationTest {
         """.trimIndent(),
         )
 
-        val application = CliApplication()
+        val application = CliApplication(
+            architecture = testArchitecture(),
+        )
 
         val result = application.run(
             arrayOf(sourceFile.toString()),
@@ -74,7 +78,9 @@ class CliApplicationTest {
         """.trimIndent(),
         )
 
-        val application = CliApplication()
+        val application = CliApplication(
+            architecture = testArchitecture(),
+        )
 
         val result = application.run(
             arrayOf(sourceFile.toString()),
@@ -95,7 +101,9 @@ class CliApplicationTest {
 
     @Test
     fun `reports error when Kotlin file does not exist`() {
-        val application = CliApplication()
+        val application = CliApplication(
+            architecture = testArchitecture(),
+        )
 
         val result = application.run(
             arrayOf("does-not-exist.kt"),
@@ -120,7 +128,9 @@ class CliApplicationTest {
             "architecture-drift-",
         )
 
-        val application = CliApplication()
+        val application = CliApplication(
+            architecture = testArchitecture(),
+        )
 
         val result = application.run(
             arrayOf(sourceDirectory.toString()),
@@ -141,7 +151,9 @@ class CliApplicationTest {
             ".txt",
         )
 
-        val application = CliApplication()
+        val application = CliApplication(
+            architecture = testArchitecture(),
+        )
 
         val result = application.run(
             arrayOf(sourceFile.toString()),

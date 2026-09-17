@@ -26,9 +26,13 @@ class DriftFileAnalyzerTest {
             """.trimIndent(),
         )
 
-        val analyzer = DriftFileAnalyzer()
+        val analyzer = DriftFileAnalyzer(
+            architecture = testArchitecture(),
+        )
 
-        val violations = analyzer.detect(sourceFile)
+        val violations = DriftFileAnalyzer(
+            architecture = testArchitecture(),
+        ).detect(sourceFile)
 
         assertEquals(
             listOf(

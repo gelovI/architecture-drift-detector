@@ -3,9 +3,8 @@ package dev.archdrift.cli
 import dev.archdrift.core.Architecture
 import dev.archdrift.core.Component
 import dev.archdrift.core.ForbiddenDependencyRule
-import kotlin.system.exitProcess
 
-fun main(args: Array<String>) {
+fun testArchitecture(): Architecture {
     val domain = Component(
         name = "domain",
         packagePrefix = "dev.shop.domain",
@@ -16,7 +15,7 @@ fun main(args: Array<String>) {
         packagePrefix = "dev.shop.infrastructure",
     )
 
-    val architecture = Architecture(
+    return Architecture(
         components = listOf(
             domain,
             infrastructure,
@@ -28,12 +27,4 @@ fun main(args: Array<String>) {
             ),
         ),
     )
-
-    val result = CliApplication(
-        architecture = architecture,
-    ).run(args)
-
-    result.output.forEach(::println)
-
-    exitProcess(result.exitCode)
 }

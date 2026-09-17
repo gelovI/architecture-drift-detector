@@ -2,6 +2,9 @@ package dev.archdrift.cli
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import dev.archdrift.core.Architecture
+import dev.archdrift.core.Component
+import dev.archdrift.core.ForbiddenDependencyRule
 
 class DriftCliTest {
 
@@ -17,7 +20,32 @@ class DriftCliTest {
             )
         """.trimIndent()
 
-        val cli = DriftCli()
+        val domain = Component(
+            name = "domain",
+            packagePrefix = "dev.shop.domain",
+        )
+
+        val infrastructure = Component(
+            name = "infrastructure",
+            packagePrefix = "dev.shop.infrastructure",
+        )
+
+        val architecture = Architecture(
+            components = listOf(
+                domain,
+                infrastructure,
+            ),
+            rules = listOf(
+                ForbiddenDependencyRule(
+                    from = domain,
+                    to = infrastructure,
+                ),
+            ),
+        )
+
+        val cli = DriftCli(
+            architecture = architecture,
+        )
 
         val violations = cli.detect(source)
 

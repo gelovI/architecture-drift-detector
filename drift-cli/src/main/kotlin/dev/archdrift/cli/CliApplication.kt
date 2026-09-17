@@ -2,8 +2,11 @@ package dev.archdrift.cli
 
 import java.nio.file.Files
 import java.nio.file.Path
+import dev.archdrift.core.Architecture
 
-class CliApplication {
+class CliApplication(
+    private val architecture: Architecture,
+) {
 
     fun run(args: Array<String>): CliResult {
         if (args.isEmpty()) {
@@ -44,8 +47,9 @@ class CliApplication {
             )
         }
 
-        val violations = DriftFileAnalyzer()
-            .detect(sourceFile)
+        val violations = DriftFileAnalyzer(
+            architecture = architecture,
+        ).detect(sourceFile)
 
         if (violations.isEmpty()) {
             return CliResult(
