@@ -51,4 +51,50 @@ class DriftDetectorTest {
             violations,
         )
     }
+
+    @Test
+    fun `detects violations using architecture definition`() {
+        val domain = Component(
+            name = "domain",
+            packagePrefix = "dev.shop.domain",
+        )
+
+        val infrastructure = Component(
+            name = "infrastructure",
+            packagePrefix = "dev.shop.infrastructure",
+        )
+
+        val architecture = Architecture(
+            components = listOf(
+                domain,
+                infrastructure,
+            ),
+            rules = listOf(
+                ForbiddenDependencyRule(
+                    from = domain,
+                    to = infrastructure,
+                ),
+            ),
+        )
+
+        val dependency = Dependency(
+            source = "dev.shop.domain.order.OrderService",
+            target = "dev.shop.infrastructure.Database",
+        )
+
+        val violations = DriftDetector().detect(
+            dependencies = listOf(dependency),
+            architecture = architecture,
+        )
+
+        assertEquals(
+            1,
+            violations.size,
+        )
+
+        assertEquals(
+            dependency,
+            violations.single().dependency,
+        )
+    }
 }
