@@ -22,3 +22,16 @@ if required.
 
 This limitation is isolated to `drift-analyzer-kotlin`. It does not affect
 `drift-core`.
+
+## Kotlin wildcard imports require semantic resolution
+
+The Kotlin source analyzer currently does not resolve dependencies referenced through wildcard imports.
+
+Example:
+
+```kotlin
+import dev.shop.infrastructure.*
+
+class OrderService(
+    private val database: Database,
+)
