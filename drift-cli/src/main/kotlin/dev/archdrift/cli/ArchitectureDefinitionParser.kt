@@ -12,11 +12,30 @@ class ArchitectureDefinitionParser {
             .map { it.trim() }
             .filter { it.isNotEmpty() }
 
+        if (lines.isEmpty()) {
+            throw IllegalArgumentException(
+                "Architecture definition must not be empty",
+            )
+        }
+
         validateStatements(lines)
 
         val components = lines
             .filter { it.startsWith("component ") }
             .map(::parseComponent)
+
+        val duplicateComponentName = components
+            .groupingBy { it.name }
+            .eachCount()
+            .entries
+            .firstOrNull { (_, count) -> count > 1 }
+            ?.key
+
+        if (duplicateComponentName != null) {
+            throw IllegalArgumentException(
+                "Duplicate component: $duplicateComponentName",
+            )
+        }
 
         val componentsByName = components
             .associateBy { it.name }

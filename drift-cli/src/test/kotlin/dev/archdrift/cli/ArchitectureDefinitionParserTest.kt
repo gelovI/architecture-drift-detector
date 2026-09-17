@@ -161,4 +161,35 @@ class ArchitectureDefinitionParserTest {
             exception.message,
         )
     }
+
+    @Test
+    fun `rejects duplicate component names`() {
+        val definition = """
+        component domain dev.shop.domain
+        component domain dev.shop.other
+    """.trimIndent()
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ArchitectureDefinitionParser()
+                .parse(definition)
+        }
+
+        assertEquals(
+            "Duplicate component: domain",
+            exception.message,
+        )
+    }
+
+    @Test
+    fun `rejects empty architecture definition`() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ArchitectureDefinitionParser()
+                .parse("")
+        }
+
+        assertEquals(
+            "Architecture definition must not be empty",
+            exception.message,
+        )
+    }
 }
