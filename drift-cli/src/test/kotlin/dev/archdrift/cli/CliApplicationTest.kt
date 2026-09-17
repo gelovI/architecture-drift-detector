@@ -98,4 +98,24 @@ class CliApplicationTest {
             output,
         )
     }
+
+    @Test
+    fun `reports error when input path is not a file`() {
+        val sourceDirectory = Files.createTempDirectory(
+            "architecture-drift-",
+        )
+
+        val application = CliApplication()
+
+        val output = application.run(
+            arrayOf(sourceDirectory.toString()),
+        )
+
+        assertEquals(
+            listOf(
+                "Error: Input path is not a file: $sourceDirectory",
+            ),
+            output,
+        )
+    }
 }

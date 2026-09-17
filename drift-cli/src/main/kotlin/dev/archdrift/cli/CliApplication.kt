@@ -20,6 +20,12 @@ class CliApplication {
             )
         }
 
+        if (!Files.isRegularFile(sourceFile)) {
+            return listOf(
+                "Error: Input path is not a file: $sourceFile",
+            )
+        }
+
         val violations = DriftFileAnalyzer()
             .detect(sourceFile)
 
