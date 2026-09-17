@@ -1,0 +1,3 @@
+component domain dev.shop.domain
+component infrastructure dev.shop.infrastructure
+forbid domain -> infrastructure

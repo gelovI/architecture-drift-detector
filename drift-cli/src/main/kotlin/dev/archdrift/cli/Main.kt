@@ -1,33 +1,11 @@
 package dev.archdrift.cli
 
-import dev.archdrift.core.Architecture
-import dev.archdrift.core.Component
-import dev.archdrift.core.ForbiddenDependencyRule
+import java.nio.file.Path
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
-    val domain = Component(
-        name = "domain",
-        packagePrefix = "dev.shop.domain",
-    )
-
-    val infrastructure = Component(
-        name = "infrastructure",
-        packagePrefix = "dev.shop.infrastructure",
-    )
-
-    val architecture = Architecture(
-        components = listOf(
-            domain,
-            infrastructure,
-        ),
-        rules = listOf(
-            ForbiddenDependencyRule(
-                from = domain,
-                to = infrastructure,
-            ),
-        ),
-    )
+    val architecture = ArchitectureFileLoader()
+        .load(Path.of("architecture.drift"))
 
     val result = CliApplication(
         architecture = architecture,
