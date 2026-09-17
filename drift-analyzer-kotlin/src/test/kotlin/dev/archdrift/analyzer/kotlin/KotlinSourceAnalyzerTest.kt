@@ -218,4 +218,31 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `detects dependency from Kotlin interface`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.payment.PaymentGateway
+
+        interface OrderProcessor {
+            fun process(paymentGateway: PaymentGateway)
+        }
+    """.trimIndent()
+
+        val analyzer = KotlinSourceAnalyzer()
+
+        val dependencies = analyzer.analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderProcessor",
+                    target = "dev.shop.payment.PaymentGateway",
+                ),
+            ),
+            dependencies,
+        )
+    }
 }
