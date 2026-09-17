@@ -52,4 +52,34 @@ class CliApplicationTest {
             output,
         )
     }
+
+    @Test
+    fun `reports no architecture drift for allowed Kotlin file`() {
+        val sourceFile = Files.createTempFile(
+            "architecture-drift-",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+            package dev.shop.domain.order
+
+            class OrderService
+        """.trimIndent(),
+        )
+
+        val application = CliApplication()
+
+        val output = application.run(
+            arrayOf(sourceFile.toString()),
+        )
+
+        assertEquals(
+            listOf(
+                "No architecture drift detected.",
+            ),
+            output,
+        )
+    }
 }
