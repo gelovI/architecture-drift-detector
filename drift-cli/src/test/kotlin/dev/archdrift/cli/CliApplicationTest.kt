@@ -82,4 +82,20 @@ class CliApplicationTest {
             output,
         )
     }
+
+    @Test
+    fun `reports error when Kotlin file does not exist`() {
+        val application = CliApplication()
+
+        val output = application.run(
+            arrayOf("does-not-exist.kt"),
+        )
+
+        assertEquals(
+            listOf(
+                "Error: Kotlin file does not exist: does-not-exist.kt",
+            ),
+            output,
+        )
+    }
 }

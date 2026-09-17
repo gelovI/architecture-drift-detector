@@ -1,5 +1,6 @@
 package dev.archdrift.cli
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 class CliApplication {
@@ -11,8 +12,16 @@ class CliApplication {
             )
         }
 
+        val sourceFile = Path.of(args[0])
+
+        if (Files.notExists(sourceFile)) {
+            return listOf(
+                "Error: Kotlin file does not exist: ${args[0]}",
+            )
+        }
+
         val violations = DriftFileAnalyzer()
-            .detect(Path.of(args[0]))
+            .detect(sourceFile)
 
         if (violations.isEmpty()) {
             return listOf(
