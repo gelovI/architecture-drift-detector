@@ -10,11 +10,11 @@ class CliApplicationTest {
     fun `returns usage when no file argument is provided`() {
         val application = CliApplication()
 
-        val output = application.run(emptyArray())
+        val result = application.run(emptyArray())
 
         assertEquals(
             listOf("Usage: architecture-drift-detector <kotlin-file>"),
-            output,
+            result.output,
         )
     }
 
@@ -40,7 +40,7 @@ class CliApplicationTest {
 
         val application = CliApplication()
 
-        val output = application.run(
+        val result = application.run(
             arrayOf(sourceFile.toString()),
         )
 
@@ -49,7 +49,12 @@ class CliApplicationTest {
                 "Architecture drift detected:",
                 "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
-            output,
+            result.output,
+        )
+
+        assertEquals(
+            1,
+            result.exitCode,
         )
     }
 
@@ -71,7 +76,7 @@ class CliApplicationTest {
 
         val application = CliApplication()
 
-        val output = application.run(
+        val result = application.run(
             arrayOf(sourceFile.toString()),
         )
 
@@ -79,7 +84,12 @@ class CliApplicationTest {
             listOf(
                 "No architecture drift detected.",
             ),
-            output,
+            result.output,
+        )
+
+        assertEquals(
+            0,
+            result.exitCode,
         )
     }
 
@@ -87,7 +97,7 @@ class CliApplicationTest {
     fun `reports error when Kotlin file does not exist`() {
         val application = CliApplication()
 
-        val output = application.run(
+        val result = application.run(
             arrayOf("does-not-exist.kt"),
         )
 
@@ -95,7 +105,12 @@ class CliApplicationTest {
             listOf(
                 "Error: Kotlin file does not exist: does-not-exist.kt",
             ),
-            output,
+            result.output,
+        )
+
+        assertEquals(
+            2,
+            result.exitCode,
         )
     }
 
@@ -107,7 +122,7 @@ class CliApplicationTest {
 
         val application = CliApplication()
 
-        val output = application.run(
+        val result = application.run(
             arrayOf(sourceDirectory.toString()),
         )
 
@@ -115,7 +130,7 @@ class CliApplicationTest {
             listOf(
                 "Error: Input path is not a file: $sourceDirectory",
             ),
-            output,
+            result.output,
         )
     }
 
@@ -128,7 +143,7 @@ class CliApplicationTest {
 
         val application = CliApplication()
 
-        val output = application.run(
+        val result = application.run(
             arrayOf(sourceFile.toString()),
         )
 
@@ -136,7 +151,7 @@ class CliApplicationTest {
             listOf(
                 "Error: Input file must be a Kotlin source file: $sourceFile",
             ),
-            output,
+            result.output,
         )
     }
 }

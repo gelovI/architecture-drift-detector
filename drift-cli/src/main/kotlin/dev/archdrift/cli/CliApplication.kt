@@ -5,30 +5,42 @@ import java.nio.file.Path
 
 class CliApplication {
 
-    fun run(args: Array<String>): List<String> {
+    fun run(args: Array<String>): CliResult {
         if (args.isEmpty()) {
-            return listOf(
-                "Usage: architecture-drift-detector <kotlin-file>",
+            return CliResult(
+                output = listOf(
+                    "Usage: architecture-drift-detector <kotlin-file>",
+                ),
+                exitCode = 2,
             )
         }
 
         val sourceFile = Path.of(args[0])
 
         if (Files.notExists(sourceFile)) {
-            return listOf(
-                "Error: Kotlin file does not exist: ${args[0]}",
+            return CliResult(
+                output = listOf(
+                    "Error: Kotlin file does not exist: ${args[0]}",
+                ),
+                exitCode = 2,
             )
         }
 
         if (!Files.isRegularFile(sourceFile)) {
-            return listOf(
-                "Error: Input path is not a file: $sourceFile",
+            return CliResult(
+                output = listOf(
+                    "Error: Input path is not a file: $sourceFile",
+                ),
+                exitCode = 2,
             )
         }
 
         if (!sourceFile.fileName.toString().endsWith(".kt")) {
-            return listOf(
-                "Error: Input file must be a Kotlin source file: $sourceFile",
+            return CliResult(
+                output = listOf(
+                    "Error: Input file must be a Kotlin source file: $sourceFile",
+                ),
+                exitCode = 2,
             )
         }
 
@@ -36,13 +48,19 @@ class CliApplication {
             .detect(sourceFile)
 
         if (violations.isEmpty()) {
-            return listOf(
-                "No architecture drift detected.",
+            return CliResult(
+                output = listOf(
+                    "No architecture drift detected.",
+                ),
+                exitCode = 0,
             )
         }
 
-        return listOf(
-            "Architecture drift detected:",
-        ) + violations
+        return CliResult(
+            output = listOf(
+                "Architecture drift detected:",
+            ) + violations,
+            exitCode = 1,
+        )
     }
 }

@@ -1,7 +1,7 @@
 package dev.archdrift.cli
 
 fun main(args: Array<String>) {
-    CliApplication()
-        .run(args)
-        .forEach(::println)
+    val result = CliApplication().run(args)
+
+    result.output.forEach(::println)
 }
