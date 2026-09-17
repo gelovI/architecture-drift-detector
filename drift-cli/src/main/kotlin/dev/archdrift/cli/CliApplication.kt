@@ -9,7 +9,7 @@ class CliApplication {
         if (args.size < 2) {
             return CliResult(
                 output = listOf(
-                    "Usage: architecture-drift-detector <architecture-file> <kotlin-file>",
+                    "Usage: architecture-drift-detector <architecture-file> <kotlin-file-or-directory>",
                 ),
                 exitCode = 2,
             )
@@ -45,16 +45,22 @@ class CliApplication {
             )
         }
 
-        if (!Files.isRegularFile(sourceFile)) {
+        if (
+            !Files.isRegularFile(sourceFile) &&
+            !Files.isDirectory(sourceFile)
+        ) {
             return CliResult(
                 output = listOf(
-                    "Error: Input path is not a file: $sourceFile",
+                    "Error: Input path must be a Kotlin file or directory: $sourceFile",
                 ),
                 exitCode = 2,
             )
         }
 
-        if (!sourceFile.fileName.toString().endsWith(".kt")) {
+        if (
+            Files.isRegularFile(sourceFile) &&
+            !sourceFile.fileName.toString().endsWith(".kt")
+        ) {
             return CliResult(
                 output = listOf(
                     "Error: Input file must be a Kotlin source file: $sourceFile",

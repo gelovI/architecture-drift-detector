@@ -15,8 +15,7 @@ class CliApplicationTest {
 
         assertEquals(
             listOf(
-                "Usage: architecture-drift-detector <architecture-file> <kotlin-file>",
-            ),
+                "Usage: architecture-drift-detector <architecture-file> <kotlin-file-or-directory>",            ),
             result.output,
         )
     }
@@ -129,31 +128,6 @@ class CliApplicationTest {
         assertEquals(
             2,
             result.exitCode,
-        )
-    }
-
-    @Test
-    fun `reports error when input path is not a file`() {
-        val architectureFile = testArchitectureFile()
-
-        val sourceDirectory = Files.createTempDirectory(
-            "architecture-drift-",
-        )
-
-        val application = CliApplication()
-
-        val result = application.run(
-            arrayOf(
-                architectureFile.toString(),
-                sourceDirectory.toString(),
-            ),
-        )
-
-        assertEquals(
-            listOf(
-                "Error: Input path is not a file: $sourceDirectory",
-            ),
-            result.output,
         )
     }
 
@@ -352,5 +326,76 @@ class CliApplicationTest {
             result.output,
         )
         assertEquals(2, result.exitCode)
+    }
+
+    @Test
+    fun `detects architecture drift in source directory`() {
+        val architectureFile = testArchitectureFile()
+        val sourceDirectory = Files.createTempDirectory("sources")
+
+        val nestedDirectory = Files.createDirectories(
+            sourceDirectory.resolve("dev/shop/domain/order"),
+        )
+
+        Files.writeString(
+            nestedDirectory.resolve("OrderService.kt"),
+            """
+            package dev.shop.domain.order
+
+            import dev.shop.infrastructure.Database
+
+            class OrderService(
+                private val database: Database,
+            )
+        """.trimIndent(),
+        )
+
+        val result = CliApplication()
+            .run(
+                arrayOf(
+                    architectureFile.toString(),
+                    sourceDirectory.toString(),
+                ),
+            )
+
+        assertEquals(
+            listOf(
+                "Architecture drift detected:",
+                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+            ),
+            result.output,
+        )
+        assertEquals(1, result.exitCode)
+    }
+
+    @Test
+    fun `accepts clean source directory`() {
+        val architectureFile = testArchitectureFile()
+        val sourceDirectory = Files.createTempDirectory("sources")
+
+        Files.writeString(
+            sourceDirectory.resolve("OrderService.kt"),
+            """
+            package dev.shop.domain.order
+
+            class OrderService
+        """.trimIndent(),
+        )
+
+        val result = CliApplication()
+            .run(
+                arrayOf(
+                    architectureFile.toString(),
+                    sourceDirectory.toString(),
+                ),
+            )
+
+        assertEquals(
+            listOf(
+                "No architecture drift detected.",
+            ),
+            result.output,
+        )
+        assertEquals(0, result.exitCode)
     }
 }
