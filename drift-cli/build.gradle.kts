@@ -25,3 +25,7 @@ application {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.named<JavaExec>("run") {
+    workingDir = rootProject.projectDir
+}
