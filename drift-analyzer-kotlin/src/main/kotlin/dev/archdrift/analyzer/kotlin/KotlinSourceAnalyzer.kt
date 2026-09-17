@@ -4,6 +4,7 @@ import dev.archdrift.core.Dependency
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
+import org.jetbrains.kotlin.psi.KtTypeReference
 
 class KotlinSourceAnalyzer {
 
@@ -30,7 +31,13 @@ class KotlinSourceAnalyzer {
                         .map { it.getReferencedName() }
                         .toSet()
 
-                    file.importDirectives
+                    val fullyQualifiedTypeNames = sourceClass
+                        .collectDescendantsOfType<KtTypeReference>()
+                        .map { it.text }
+                        .filter { "." in it }
+                        .toSet()
+
+                    val importedDependencies = file.importDirectives
                         .mapNotNull { importDirective ->
                             val importedFqName = importDirective.importedFqName
                                 ?.asString()
@@ -50,6 +57,16 @@ class KotlinSourceAnalyzer {
                                 target = importedFqName,
                             )
                         }
+
+                    val fullyQualifiedDependencies = fullyQualifiedTypeNames
+                        .map { typeName ->
+                            Dependency(
+                                source = qualifiedClassName,
+                                target = typeName,
+                            )
+                        }
+
+                    (importedDependencies + fullyQualifiedDependencies).distinct()
                 }
         }
 }

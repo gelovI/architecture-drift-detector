@@ -245,4 +245,29 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `detects dependency from fully qualified type reference`() {
+        val source = """
+        package dev.shop.domain.order
+
+        class OrderService(
+            private val database: dev.shop.infrastructure.Database,
+        )
+    """.trimIndent()
+
+        val analyzer = KotlinSourceAnalyzer()
+
+        val dependencies = analyzer.analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                ),
+            ),
+            dependencies,
+        )
+    }
 }
