@@ -1,7 +1,7 @@
 package dev.archdrift.analyzer.kotlin
 
 import dev.archdrift.core.Dependency
-import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 
@@ -14,7 +14,7 @@ class KotlinSourceAnalyzer {
             val packageName = file.packageFqName.asString()
 
             file.declarations
-                .filterIsInstance<KtClass>()
+                .filterIsInstance<KtClassOrObject>()
                 .flatMap { sourceClass ->
                     val className = sourceClass.name
                         ?: return@flatMap emptyList()
