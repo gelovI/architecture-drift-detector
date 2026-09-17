@@ -382,4 +382,30 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `detects dependency from Kotlin annotation`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.InfrastructureOnly
+
+        @InfrastructureOnly
+        class OrderService
+    """.trimIndent()
+
+        val analyzer = KotlinSourceAnalyzer()
+
+        val dependencies = analyzer.analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.InfrastructureOnly",
+                ),
+            ),
+            dependencies,
+        )
+    }
 }
