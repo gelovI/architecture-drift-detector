@@ -34,15 +34,22 @@ class KotlinSourceAnalyzer {
 
             file.importDirectives
                 .mapNotNull { importDirective ->
-                    importDirective.importedFqName?.asString()
+                    val importedFqName = importDirective.importedFqName
+                        ?.asString()
+                        ?: return@mapNotNull null
+
+                    val referencedName = importDirective.aliasName
+                        ?: importedFqName.substringAfterLast(".")
+
+                    importedFqName to referencedName
                 }
-                .filter { importedType ->
-                    importedType.substringAfterLast(".") in referencedNames
+                .filter { (_, referencedName) ->
+                    referencedName in referencedNames
                 }
-                .map { importedType ->
+                .map { (importedFqName, _) ->
                     Dependency(
                         source = qualifiedClassName,
-                        target = importedType,
+                        target = importedFqName,
                     )
                 }
         }
