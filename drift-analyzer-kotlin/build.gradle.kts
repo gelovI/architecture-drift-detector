@@ -9,6 +9,8 @@ repositories {
 dependencies {
     implementation(project(":drift-core"))
 
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.2.21")
+
     testImplementation(kotlin("test"))
 }
 

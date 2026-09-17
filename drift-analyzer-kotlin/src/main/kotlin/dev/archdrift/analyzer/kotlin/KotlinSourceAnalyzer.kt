@@ -1,57 +1,49 @@
 package dev.archdrift.analyzer.kotlin
 
 import dev.archdrift.core.Dependency
+import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 
 class KotlinSourceAnalyzer {
 
-    fun analyze(source: String): List<Dependency> {
-        val packageName = PACKAGE_REGEX
-            .find(source)
-            ?.groupValues
-            ?.get(1)
-            ?: return emptyList()
+    fun analyze(source: String): List<Dependency> =
+        KotlinPsiParser().use { parser ->
+            val file = parser.parse(source)
 
-        val className = CLASS_REGEX
-            .find(source)
-            ?.groupValues
-            ?.get(1)
-            ?: return emptyList()
+            val packageName = file.packageFqName.asString()
 
-        val qualifiedClassName = "$packageName.$className"
+            val sourceClass = file.declarations
+                .filterIsInstance<KtClass>()
+                .firstOrNull()
+                ?: return@use emptyList()
 
-        val sourceWithoutImports = IMPORT_REGEX.replace(source, "")
+            val className = sourceClass.name
+                ?: return@use emptyList()
 
-        return IMPORT_REGEX
-            .findAll(source)
-            .map { match ->
-                match.groupValues[1]
+            val qualifiedClassName = if (packageName.isEmpty()) {
+                className
+            } else {
+                "$packageName.$className"
             }
-            .filter { importedType ->
-                val simpleName = importedType.substringAfterLast(".")
 
-                Regex("""\b${Regex.escape(simpleName)}\b""")
-                    .containsMatchIn(sourceWithoutImports)
-            }
-            .map { importedType ->
-                Dependency(
-                    source = qualifiedClassName,
-                    target = importedType,
-                )
-            }
-            .toList()
-    }
+            val referencedNames = sourceClass
+                .collectDescendantsOfType<KtNameReferenceExpression>()
+                .map { it.getReferencedName() }
+                .toSet()
 
-    private companion object {
-        val PACKAGE_REGEX = Regex(
-            """(?m)^\s*package\s+([\w.]+)"""
-        )
-
-        val IMPORT_REGEX = Regex(
-            """(?m)^\s*import\s+([\w.]+)"""
-        )
-
-        val CLASS_REGEX = Regex(
-            """\bclass\s+(\w+)"""
-        )
-    }
+            file.importDirectives
+                .mapNotNull { importDirective ->
+                    importDirective.importedFqName?.asString()
+                }
+                .filter { importedType ->
+                    importedType.substringAfterLast(".") in referencedNames
+                }
+                .map { importedType ->
+                    Dependency(
+                        source = qualifiedClassName,
+                        target = importedType,
+                    )
+                }
+        }
 }
