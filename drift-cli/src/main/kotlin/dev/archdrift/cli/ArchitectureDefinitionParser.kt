@@ -31,9 +31,22 @@ class ArchitectureDefinitionParser {
             .map { line ->
                 val parts = line.split(Regex("\\s+"))
 
+                val sourceComponentName = parts[1]
+                val targetComponentName = parts[3]
+
+                val sourceComponent = componentsByName[sourceComponentName]
+                    ?: throw IllegalArgumentException(
+                        "Unknown component in forbidden dependency rule: $sourceComponentName",
+                    )
+
+                val targetComponent = componentsByName[targetComponentName]
+                    ?: throw IllegalArgumentException(
+                        "Unknown component in forbidden dependency rule: $targetComponentName",
+                    )
+
                 ForbiddenDependencyRule(
-                    from = componentsByName.getValue(parts[1]),
-                    to = componentsByName.getValue(parts[3]),
+                    from = sourceComponent,
+                    to = targetComponent,
                 )
             }
 

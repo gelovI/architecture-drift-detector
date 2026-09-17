@@ -4,6 +4,7 @@ import dev.archdrift.core.Component
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import dev.archdrift.core.ForbiddenDependencyRule
+import kotlin.test.assertFailsWith
 
 class ArchitectureDefinitionParserTest {
 
@@ -69,6 +70,24 @@ class ArchitectureDefinitionParserTest {
                 ),
             ),
             architecture.rules,
+        )
+    }
+
+    @Test
+    fun `rejects forbidden dependency with unknown source component`() {
+        val definition = """
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+    """.trimIndent()
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            ArchitectureDefinitionParser()
+                .parse(definition)
+        }
+
+        assertEquals(
+            "Unknown component in forbidden dependency rule: domain",
+            exception.message,
         )
     }
 }
