@@ -10,59 +10,66 @@ import org.gradle.api.Project
 class ArchitectureDriftPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
-        project.tasks.register("architectureDriftCheck") { task ->
-            task.group = "verification"
-            task.description = "Checks the project for architecture drift."
+        val architectureDriftCheck =
+            project.tasks.register("architectureDriftCheck") { task ->
+                task.group = "verification"
+                task.description = "Checks the project for architecture drift."
 
-            task.doLast {
-                val architectureFile =
-                    project.layout.projectDirectory
-                        .file("architecture.drift")
-                        .asFile
-                        .toPath()
+                task.doLast {
+                    val architectureFile =
+                        project.layout.projectDirectory
+                            .file("architecture.drift")
+                            .asFile
+                            .toPath()
 
-                val sourceDirectory =
-                    project.layout.projectDirectory
-                        .dir("src/main/kotlin")
-                        .asFile
-                        .toPath()
+                    val sourceDirectory =
+                        project.layout.projectDirectory
+                            .dir("src/main/kotlin")
+                            .asFile
+                            .toPath()
 
-                val architecture = ArchitectureFileLoader()
-                    .load(architectureFile)
+                    val architecture = ArchitectureFileLoader()
+                        .load(architectureFile)
 
-                val violations = ArchitectureDriftFileAnalyzer(
-                    architecture = architecture,
-                ).detect(sourceDirectory)
+                    val violations = ArchitectureDriftFileAnalyzer(
+                        architecture = architecture,
+                    ).detect(sourceDirectory)
 
-                if (violations.isNotEmpty()) {
-                    val diagnostics = violations.joinToString("\n") { violation ->
-                        val dependency = violation.dependency
-                        val location = dependency.location
+                    if (violations.isNotEmpty()) {
+                        val diagnostics = violations.joinToString("\n") { violation ->
+                            val dependency = violation.dependency
+                            val location = dependency.location
 
-                        val ruleDescription = when (val rule = violation.rule) {
-                            is ForbiddenDependencyRule ->
-                                "forbidden dependency ${rule.from.name} -> ${rule.to.name}"
+                            val ruleDescription = when (val rule = violation.rule) {
+                                is ForbiddenDependencyRule ->
+                                    "forbidden dependency ${rule.from.name} -> ${rule.to.name}"
 
-                            else ->
-                                "architecture rule violation"
+                                else ->
+                                    "architecture rule violation"
+                            }
+
+                            val dependencyDescription =
+                                "${dependency.source} -> ${dependency.target}"
+
+                            if (location == null) {
+                                "$ruleDescription: $dependencyDescription"
+                            } else {
+                                "${location.file}:${location.line}: " +
+                                        "$ruleDescription: $dependencyDescription"
+                            }
                         }
 
-                        val dependencyDescription =
-                            "${dependency.source} -> ${dependency.target}"
-
-                        if (location == null) {
-                            "$ruleDescription: $dependencyDescription"
-                        } else {
-                            "${location.file}:${location.line}: " +
-                                    "$ruleDescription: $dependencyDescription"
-                        }
+                        throw GradleException(
+                            "Architecture drift detected:\n$diagnostics",
+                        )
                     }
-
-                    throw GradleException(
-                        "Architecture drift detected:\n$diagnostics",
-                    )
                 }
             }
+
+        project.tasks.matching { task ->
+            task.name == "check"
+        }.configureEach { task ->
+            task.dependsOn(architectureDriftCheck)
         }
     }
 }
