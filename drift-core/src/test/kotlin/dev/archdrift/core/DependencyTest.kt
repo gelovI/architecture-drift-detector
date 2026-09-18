@@ -21,4 +21,20 @@ class DependencyTest {
             dependency.target,
         )
     }
+
+    @Test
+    fun `stores source location`() {
+        val location = SourceLocation(
+            file = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+            line = 5,
+        )
+
+        val dependency = Dependency(
+            source = "dev.shop.domain.order.OrderService",
+            target = "dev.shop.infrastructure.Database",
+            location = location,
+        )
+
+        assertEquals(location, dependency.location)
+    }
 }
