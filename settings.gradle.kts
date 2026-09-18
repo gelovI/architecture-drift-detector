@@ -8,4 +8,5 @@ include(
     "drift-core",
     "drift-analyzer-kotlin",
     "drift-cli",
+    "drift-gradle-plugin",
 )
