@@ -31,6 +31,7 @@ class ArchitectureDriftAcceptanceTest {
             listOf(
                 "Architecture drift detected:",
                 "${sourceFile}:6: " +
+                        "forbidden dependency domain -> infrastructure: " +
                         "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             result.output,

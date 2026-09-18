@@ -33,6 +33,7 @@ class DriftFileAnalyzerTest {
         assertEquals(
             listOf(
                 "${sourceFile}:6: " +
+                        "forbidden dependency domain -> infrastructure: " +
                         "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,
@@ -79,6 +80,7 @@ class DriftFileAnalyzerTest {
         assertEquals(
             listOf(
                 "${orderServiceFile}:6: " +
+                        "forbidden dependency domain -> infrastructure: " +
                         "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,
@@ -116,6 +118,7 @@ class DriftFileAnalyzerTest {
         assertEquals(
             listOf(
                 "${orderServiceFile}:6: " +
+                        "forbidden dependency domain -> infrastructure: " +
                         "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,

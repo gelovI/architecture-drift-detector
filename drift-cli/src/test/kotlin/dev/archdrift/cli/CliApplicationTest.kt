@@ -55,6 +55,7 @@ class CliApplicationTest {
             listOf(
                 "Architecture drift detected:",
                 "${sourceFile}:6: " +
+                        "forbidden dependency domain -> infrastructure: " +
                         "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             result.output,
@@ -205,6 +206,7 @@ class CliApplicationTest {
             listOf(
                 "Architecture drift detected:",
                 "${sourceFile}:6: " +
+                        "forbidden dependency business -> persistence: " +
                         "com.acme.business.order.OrderService -> com.acme.persistence.Database",
             ),
             result.output,
@@ -367,6 +369,7 @@ class CliApplicationTest {
             listOf(
                 "Architecture drift detected:",
                 "${orderServiceFile}:6: " +
+                        "forbidden dependency domain -> infrastructure: " +
                         "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             result.output,

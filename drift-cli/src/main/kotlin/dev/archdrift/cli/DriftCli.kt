@@ -3,6 +3,7 @@ package dev.archdrift.cli
 import dev.archdrift.analyzer.kotlin.KotlinSourceAnalyzer
 import dev.archdrift.core.Architecture
 import dev.archdrift.core.DriftDetector
+import dev.archdrift.core.ForbiddenDependencyRule
 
 class DriftCli(
     private val architecture: Architecture,
@@ -27,11 +28,22 @@ class DriftCli(
                 val dependency = violation.dependency
                 val location = dependency.location
 
-                if (location == null) {
+                val ruleDescription = when (val rule = violation.rule) {
+                    is ForbiddenDependencyRule ->
+                        "forbidden dependency ${rule.from.name} -> ${rule.to.name}"
+
+                    else ->
+                        "architecture rule violation"
+                }
+
+                val dependencyDescription =
                     "${dependency.source} -> ${dependency.target}"
+
+                if (location == null) {
+                    "$ruleDescription: $dependencyDescription"
                 } else {
                     "${location.file}:${location.line}: " +
-                            "${dependency.source} -> ${dependency.target}"
+                            "$ruleDescription: $dependencyDescription"
                 }
             }
     }

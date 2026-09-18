@@ -51,14 +51,15 @@ class DriftCliTest {
 
         assertEquals(
             listOf(
-                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+                "forbidden dependency domain -> infrastructure: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,
         )
     }
 
     @Test
-    fun `preserves source location in detected violation`() {
+    fun `reports violated architecture rule with source location`() {
         val source = """
         package dev.shop.domain.order
 
@@ -79,6 +80,7 @@ class DriftCliTest {
         assertEquals(
             listOf(
                 "src/main/kotlin/dev/shop/domain/order/OrderService.kt:6: " +
+                        "forbidden dependency domain -> infrastructure: " +
                         "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,
