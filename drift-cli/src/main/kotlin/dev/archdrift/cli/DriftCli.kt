@@ -24,6 +24,14 @@ class DriftCli(
                 dependencies = dependencies,
                 architecture = architecture,
             )
+            .sortedWith(
+                compareBy(
+                    { it.dependency.location?.file ?: "" },
+                    { it.dependency.location?.line ?: Int.MAX_VALUE },
+                    { it.dependency.source },
+                    { it.dependency.target },
+                ),
+            )
             .map { violation ->
                 val dependency = violation.dependency
                 val location = dependency.location
