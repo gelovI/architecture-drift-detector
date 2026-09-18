@@ -6,10 +6,16 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
+import dev.archdrift.core.SourceLocation
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.psi.KtFile
 
 class KotlinSourceAnalyzer {
 
-    fun analyze(source: String): List<Dependency> =
+    fun analyze(
+        source: String,
+        sourceFile: String? = null,
+    ): List<Dependency> =
         KotlinPsiParser().use { parser ->
             val file = parser.parse(source)
 
@@ -38,22 +44,12 @@ class KotlinSourceAnalyzer {
                         "$packageName.$relativeClassName"
                     }
 
-                    val referencedNames = sourceClass
-                        .collectDescendantsOfType<KtNameReferenceExpression>()
-                        .filter { reference ->
-                            reference.getParentOfType<KtClassOrObject>(strict = true) == sourceClass
-                        }
-                        .map { it.getReferencedName() }
-                        .toSet()
-
-                    val fullyQualifiedTypeNames = sourceClass
+                    val fullyQualifiedTypeReferences = sourceClass
                         .collectDescendantsOfType<KtTypeReference>()
                         .filter { typeReference ->
                             typeReference.getParentOfType<KtClassOrObject>(strict = true) == sourceClass
                         }
-                        .map { it.text }
-                        .filter { "." in it }
-                        .toSet()
+                        .filter { "." in it.text }
 
                     val importedDependencies = file.importDirectives
                         .mapNotNull { importDirective ->
@@ -64,27 +60,56 @@ class KotlinSourceAnalyzer {
                             val referencedName = importDirective.aliasName
                                 ?: importedFqName.substringAfterLast(".")
 
-                            importedFqName to referencedName
-                        }
-                        .filter { (_, referencedName) ->
-                            referencedName in referencedNames
-                        }
-                        .map { (importedFqName, _) ->
+                            val reference = sourceClass
+                                .collectDescendantsOfType<KtNameReferenceExpression>()
+                                .firstOrNull { candidate ->
+                                    candidate.getParentOfType<KtClassOrObject>(strict = true) == sourceClass &&
+                                            candidate.getReferencedName() == referencedName
+                                }
+                                ?: return@mapNotNull null
+
                             Dependency(
                                 source = qualifiedClassName,
                                 target = importedFqName,
+                                location = sourceLocation(
+                                    file = file,
+                                    element = reference,
+                                    sourceFile = sourceFile,
+                                ),
                             )
                         }
 
-                    val fullyQualifiedDependencies = fullyQualifiedTypeNames
-                        .map { typeName ->
+                    val fullyQualifiedDependencies = fullyQualifiedTypeReferences
+                        .map { typeReference ->
                             Dependency(
                                 source = qualifiedClassName,
-                                target = typeName,
+                                target = typeReference.text,
+                                location = sourceLocation(
+                                    file = file,
+                                    element = typeReference,
+                                    sourceFile = sourceFile,
+                                ),
                             )
                         }
 
                     (importedDependencies + fullyQualifiedDependencies).distinct()
                 }
+        }
+
+    private fun sourceLocation(
+        file: KtFile,
+        element: PsiElement,
+        sourceFile: String?,
+    ): SourceLocation? =
+        sourceFile?.let {
+            SourceLocation(
+                file = it,
+                line = file
+                    .viewProvider
+                    .document
+                    ?.getLineNumber(element.textOffset)
+                    ?.plus(1)
+                    ?: 1,
+            )
         }
 }

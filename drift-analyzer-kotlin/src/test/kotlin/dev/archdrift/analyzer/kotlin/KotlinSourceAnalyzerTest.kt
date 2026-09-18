@@ -3,6 +3,7 @@ package dev.archdrift.analyzer.kotlin
 import dev.archdrift.core.Dependency
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import dev.archdrift.core.SourceLocation
 
 class KotlinSourceAnalyzerTest {
 
@@ -403,6 +404,70 @@ class KotlinSourceAnalyzerTest {
                 Dependency(
                     source = "dev.shop.domain.order.OrderService",
                     target = "dev.shop.infrastructure.InfrastructureOnly",
+                ),
+            ),
+            dependencies,
+        )
+    }
+
+    @Test
+    fun `reports source location for imported dependency`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database,
+        )
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer()
+            .analyze(
+                source = source,
+                sourceFile = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+            )
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                    location = SourceLocation(
+                        file = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+                        line = 6,
+                    ),
+                ),
+            ),
+            dependencies,
+        )
+    }
+
+    @Test
+    fun `reports source location for fully qualified dependency`() {
+        val source = """
+        package dev.shop.domain.order
+
+        class OrderService(
+            private val database: dev.shop.infrastructure.Database,
+        )
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer()
+            .analyze(
+                source = source,
+                sourceFile = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+            )
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                    location = SourceLocation(
+                        file = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+                        line = 4,
+                    ),
                 ),
             ),
             dependencies,
