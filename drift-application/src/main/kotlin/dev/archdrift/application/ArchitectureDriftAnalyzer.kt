@@ -4,6 +4,7 @@ import dev.archdrift.analyzer.kotlin.KotlinSourceAnalyzer
 import dev.archdrift.core.Architecture
 import dev.archdrift.core.DriftDetector
 import dev.archdrift.core.Violation
+import dev.archdrift.core.ViolationBaseline
 
 class ArchitectureDriftAnalyzer(
     private val architecture: Architecture,
@@ -33,4 +34,16 @@ class ArchitectureDriftAnalyzer(
                 ),
             )
     }
+
+    fun detectNew(
+        source: String,
+        sourceFile: String? = null,
+        baseline: ViolationBaseline,
+    ): List<Violation> =
+        baseline.newViolations(
+            detect(
+                source = source,
+                sourceFile = sourceFile,
+            ),
+        )
 }
