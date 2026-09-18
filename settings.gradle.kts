@@ -7,6 +7,7 @@ rootProject.name = "architecture-drift-detector"
 include(
     "drift-core",
     "drift-analyzer-kotlin",
+    "drift-application",
     "drift-cli",
     "drift-gradle-plugin",
 )

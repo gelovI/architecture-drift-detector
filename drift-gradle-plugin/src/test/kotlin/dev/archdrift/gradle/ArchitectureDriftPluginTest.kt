@@ -4,6 +4,8 @@ import org.gradle.testkit.runner.GradleRunner
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import kotlin.test.assertTrue
+import org.gradle.testkit.runner.TaskOutcome
+import kotlin.test.assertEquals
 
 class ArchitectureDriftPluginTest {
 
@@ -35,6 +37,134 @@ class ArchitectureDriftPluginTest {
 
         assertTrue(
             result.output.contains("architectureDriftCheck"),
+            result.output,
+        )
+    }
+
+    @Test
+    fun `architecture drift check succeeds for clean project`() {
+        val projectDir = Files.createTempDirectory("architecture-drift-clean")
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        class OrderService
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":architectureDriftCheck")?.outcome,
+        )
+    }
+
+    @Test
+    fun `architecture drift check fails for forbidden dependency`() {
+        val projectDir = Files.createTempDirectory("architecture-drift-broken")
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database,
+        )
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .buildAndFail()
+
+        assertTrue(
+            result.output.contains("Architecture drift detected"),
+            result.output,
+        )
+
+        assertTrue(
+            result.output.contains(
+                "forbidden dependency domain -> infrastructure",
+            ),
+            result.output,
+        )
+
+        assertTrue(
+            result.output.contains(
+                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+            ),
             result.output,
         )
     }

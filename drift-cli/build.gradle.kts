@@ -9,7 +9,7 @@ repositories {
 
 dependencies {
     implementation(project(":drift-core"))
-    implementation(project(":drift-analyzer-kotlin"))
+    implementation(project(":drift-application"))
 
     testImplementation(kotlin("test"))
 }

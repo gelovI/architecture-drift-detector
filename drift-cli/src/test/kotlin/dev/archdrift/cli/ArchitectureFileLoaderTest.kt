@@ -5,6 +5,7 @@ import dev.archdrift.core.ForbiddenDependencyRule
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import dev.archdrift.application.ArchitectureFileLoader
 
 class ArchitectureFileLoaderTest {
 

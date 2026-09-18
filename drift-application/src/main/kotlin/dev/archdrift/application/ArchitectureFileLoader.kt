@@ -1,4 +1,4 @@
-package dev.archdrift.cli
+package dev.archdrift.application
 
 import dev.archdrift.core.Architecture
 import java.nio.file.Files

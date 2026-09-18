@@ -1,8 +1,7 @@
 package dev.archdrift.cli
 
-import dev.archdrift.analyzer.kotlin.KotlinSourceAnalyzer
+import dev.archdrift.application.ArchitectureDriftAnalyzer
 import dev.archdrift.core.Architecture
-import dev.archdrift.core.DriftDetector
 import dev.archdrift.core.ForbiddenDependencyRule
 
 class DriftCli(
@@ -12,25 +11,13 @@ class DriftCli(
     fun detect(
         source: String,
         sourceFile: String? = null,
-    ): List<String> {
-        val dependencies = KotlinSourceAnalyzer()
-            .analyze(
+    ): List<String> =
+        ArchitectureDriftAnalyzer(
+            architecture = architecture,
+        )
+            .detect(
                 source = source,
                 sourceFile = sourceFile,
-            )
-
-        return DriftDetector()
-            .detect(
-                dependencies = dependencies,
-                architecture = architecture,
-            )
-            .sortedWith(
-                compareBy(
-                    { it.dependency.location?.file ?: "" },
-                    { it.dependency.location?.line ?: Int.MAX_VALUE },
-                    { it.dependency.source },
-                    { it.dependency.target },
-                ),
             )
             .map { violation ->
                 val dependency = violation.dependency
@@ -54,5 +41,4 @@ class DriftCli(
                             "$ruleDescription: $dependencyDescription"
                 }
             }
-    }
 }

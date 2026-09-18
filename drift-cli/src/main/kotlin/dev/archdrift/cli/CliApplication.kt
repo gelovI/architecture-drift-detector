@@ -2,6 +2,7 @@ package dev.archdrift.cli
 
 import java.nio.file.Files
 import java.nio.file.Path
+import dev.archdrift.application.ArchitectureFileLoader
 
 class CliApplication {
 

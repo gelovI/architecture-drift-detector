@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import dev.archdrift.core.ForbiddenDependencyRule
 import kotlin.test.assertFailsWith
+import dev.archdrift.application.ArchitectureDefinitionParser
 
 class ArchitectureDefinitionParserTest {
 
