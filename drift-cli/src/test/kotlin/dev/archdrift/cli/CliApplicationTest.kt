@@ -407,4 +407,289 @@ class CliApplicationTest {
         )
         assertEquals(0, result.exitCode)
     }
+
+    @Test
+    fun `creates baseline from existing architecture drift`() {
+        val architectureFile = testArchitectureFile()
+
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database,
+        )
+        """.trimIndent(),
+        )
+
+        val baselineFile = Files.createTempFile(
+            "architecture-drift-",
+            ".baseline",
+        )
+
+        val result = CliApplication().run(
+            arrayOf(
+                "baseline",
+                architectureFile.toString(),
+                sourceFile.toString(),
+                baselineFile.toString(),
+            ),
+        )
+
+        assertEquals(
+            0,
+            result.exitCode,
+        )
+
+        assertEquals(
+            listOf(
+                "Architecture drift baseline written to: $baselineFile",
+            ),
+            result.output,
+        )
+
+        assertEquals(
+            "forbid domain -> infrastructure | " +
+                    "dev.shop.domain.order.OrderService -> " +
+                    "dev.shop.infrastructure.Database",
+            Files.readString(baselineFile),
+        )
+    }
+
+    @Test
+    fun `creates empty baseline when no architecture drift exists`() {
+        val architectureFile = testArchitectureFile()
+
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+        package dev.shop.domain.order
+
+        class OrderService
+        """.trimIndent(),
+        )
+
+        val baselineFile = Files.createTempFile(
+            "architecture-drift-",
+            ".baseline",
+        )
+
+        val result = CliApplication().run(
+            arrayOf(
+                "baseline",
+                architectureFile.toString(),
+                sourceFile.toString(),
+                baselineFile.toString(),
+            ),
+        )
+
+        assertEquals(
+            0,
+            result.exitCode,
+        )
+
+        assertEquals(
+            "",
+            Files.readString(baselineFile),
+        )
+    }
+
+    @Test
+    fun `baseline command requires architecture source and output arguments`() {
+        val result = CliApplication().run(
+            arrayOf(
+                "baseline",
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "Usage: architecture-drift-detector baseline " +
+                        "<architecture-file> <kotlin-file-or-directory> <baseline-file>",
+            ),
+            result.output,
+        )
+
+        assertEquals(
+            2,
+            result.exitCode,
+        )
+    }
+
+    @Test
+    fun `check ignores architecture drift contained in baseline`() {
+        val architectureFile = testArchitectureFile()
+
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database,
+        )
+        """.trimIndent(),
+        )
+
+        val baselineFile = Files.createTempFile(
+            "architecture-drift-",
+            ".baseline",
+        )
+
+        Files.writeString(
+            baselineFile,
+            "forbid domain -> infrastructure | " +
+                    "dev.shop.domain.order.OrderService -> " +
+                    "dev.shop.infrastructure.Database",
+        )
+
+        val result = CliApplication().run(
+            arrayOf(
+                "check",
+                architectureFile.toString(),
+                sourceFile.toString(),
+                baselineFile.toString(),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "No new architecture drift detected.",
+            ),
+            result.output,
+        )
+
+        assertEquals(
+            0,
+            result.exitCode,
+        )
+    }
+
+    @Test
+    fun `check reports architecture drift not contained in baseline`() {
+        val architectureFile = testArchitectureFile()
+
+        val sourceFile = Files.createTempFile(
+            "CustomerService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+        package dev.shop.domain.customer
+
+        import dev.shop.infrastructure.MessageBroker
+
+        class CustomerService(
+            private val messageBroker: MessageBroker,
+        )
+        """.trimIndent(),
+        )
+
+        val baselineFile = Files.createTempFile(
+            "architecture-drift-",
+            ".baseline",
+        )
+
+        Files.writeString(
+            baselineFile,
+            "forbid domain -> infrastructure | " +
+                    "dev.shop.domain.order.OrderService -> " +
+                    "dev.shop.infrastructure.Database",
+        )
+
+        val result = CliApplication().run(
+            arrayOf(
+                "check",
+                architectureFile.toString(),
+                sourceFile.toString(),
+                baselineFile.toString(),
+            ),
+        )
+
+        assertEquals(
+            1,
+            result.exitCode,
+        )
+
+        assertEquals(
+            "Architecture drift detected:",
+            result.output.first(),
+        )
+
+        assertEquals(
+            true,
+            result.output.single { line ->
+                line.contains(
+                    "dev.shop.domain.customer.CustomerService -> " +
+                            "dev.shop.infrastructure.MessageBroker",
+                )
+            }.isNotEmpty(),
+        )
+    }
+
+    @Test
+    fun `check rejects missing baseline file`() {
+        val architectureFile = testArchitectureFile()
+
+        val sourceFile = Files.createTempFile(
+            "OrderService",
+            ".kt",
+        )
+
+        Files.writeString(
+            sourceFile,
+            """
+        package dev.shop.domain.order
+
+        class OrderService
+        """.trimIndent(),
+        )
+
+        val baselineFile = Path.of(
+            "missing-architecture-drift.baseline",
+        )
+
+        val result = CliApplication().run(
+            arrayOf(
+                "check",
+                architectureFile.toString(),
+                sourceFile.toString(),
+                baselineFile.toString(),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                "Error: Baseline file does not exist: $baselineFile",
+            ),
+            result.output,
+        )
+
+        assertEquals(
+            2,
+            result.exitCode,
+        )
+    }
 }
