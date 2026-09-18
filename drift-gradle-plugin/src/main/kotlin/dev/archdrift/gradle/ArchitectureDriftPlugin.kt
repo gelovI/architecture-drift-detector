@@ -10,6 +10,19 @@ import org.gradle.api.Project
 class ArchitectureDriftPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
+        val extension = project.extensions.create(
+            "architectureDrift",
+            ArchitectureDriftExtension::class.java,
+        )
+
+        extension.architectureFile.convention(
+            project.layout.projectDirectory.file("architecture.drift"),
+        )
+
+        extension.sourceDirectory.convention(
+            project.layout.projectDirectory.dir("src/main/kotlin"),
+        )
+
         val architectureDriftCheck =
             project.tasks.register("architectureDriftCheck") { task ->
                 task.group = "verification"
@@ -17,14 +30,14 @@ class ArchitectureDriftPlugin : Plugin<Project> {
 
                 task.doLast {
                     val architectureFile =
-                        project.layout.projectDirectory
-                            .file("architecture.drift")
+                        extension.architectureFile
+                            .get()
                             .asFile
                             .toPath()
 
                     val sourceDirectory =
-                        project.layout.projectDirectory
-                            .dir("src/main/kotlin")
+                        extension.sourceDirectory
+                            .get()
                             .asFile
                             .toPath()
 

@@ -233,4 +233,149 @@ class ArchitectureDriftPluginTest {
             result.output,
         )
     }
+
+    @Test
+    fun `uses configured architecture file`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-custom-architecture",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+
+        architectureDrift {
+            architectureFile.set(
+                layout.projectDirectory.file("config/custom.drift")
+            )
+        }
+        """.trimIndent(),
+        )
+
+        val configDir = projectDir.resolve("config")
+        Files.createDirectories(configDir)
+
+        Files.writeString(
+            configDir.resolve("custom.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        class OrderService
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":architectureDriftCheck")?.outcome,
+        )
+    }
+
+    @Test
+    fun `uses configured source directory`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-custom-source",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+
+        architectureDrift {
+            sourceDirectory.set(
+                layout.projectDirectory.dir("custom-sources")
+            )
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val sourceDir = projectDir.resolve(
+            "custom-sources/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database,
+        )
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .buildAndFail()
+
+        assertEquals(
+            TaskOutcome.FAILED,
+            result.task(":architectureDriftCheck")?.outcome,
+        )
+
+        assertTrue(
+            result.output.contains("Architecture drift detected"),
+            result.output,
+        )
+
+        assertTrue(
+            result.output.contains(
+                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+            ),
+            result.output,
+        )
+    }
 }
