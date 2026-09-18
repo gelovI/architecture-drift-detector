@@ -41,6 +41,10 @@ class ArchitectureDriftPlugin : Plugin<Project> {
                         "architecture-drift/check-result.txt",
                     ),
                 )
+
+                task.baselineFile.set(
+                    extension.baselineFile,
+                )
             }
 
         project.tasks.matching { task ->

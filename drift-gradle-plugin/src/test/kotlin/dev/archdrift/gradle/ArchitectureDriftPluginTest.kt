@@ -539,4 +539,307 @@ class ArchitectureDriftPluginTest {
             secondResult.task(":architectureDriftCheck")?.outcome,
         )
     }
+
+    @Test
+    fun `configured baseline tolerates existing architecture drift`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-baseline-existing",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+
+        architectureDrift {
+            baselineFile.set(
+                layout.projectDirectory.file("architecture-drift.baseline")
+            )
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture-drift.baseline"),
+            "forbid domain -> infrastructure | " +
+                    "dev.shop.domain.order.OrderService -> " +
+                    "dev.shop.infrastructure.Database",
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database,
+        )
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":architectureDriftCheck")?.outcome,
+        )
+
+        assertTrue(
+            Files.readString(
+                projectDir.resolve(
+                    "build/architecture-drift/check-result.txt",
+                ),
+            ).contains("No new architecture drift detected."),
+        )
+    }
+
+    @Test
+    fun `configured baseline does not tolerate new architecture drift`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-baseline-new",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+
+        architectureDrift {
+            baselineFile.set(
+                layout.projectDirectory.file("architecture-drift.baseline")
+            )
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture-drift.baseline"),
+            "forbid domain -> infrastructure | " +
+                    "dev.shop.domain.order.OrderService -> " +
+                    "dev.shop.infrastructure.Database",
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/customer",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("CustomerService.kt"),
+            """
+        package dev.shop.domain.customer
+
+        import dev.shop.infrastructure.MessageBroker
+
+        class CustomerService(
+            private val messageBroker: MessageBroker,
+        )
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .buildAndFail()
+
+        assertEquals(
+            TaskOutcome.FAILED,
+            result.task(":architectureDriftCheck")?.outcome,
+        )
+
+        assertTrue(
+            result.output.contains(
+                "dev.shop.domain.customer.CustomerService -> " +
+                        "dev.shop.infrastructure.MessageBroker",
+            ),
+            result.output,
+        )
+    }
+
+    @Test
+    fun `architecture drift check works without configured baseline`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-no-baseline",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        class OrderService
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":architectureDriftCheck")?.outcome,
+        )
+    }
+
+    @Test
+    fun `architecture drift check reruns when baseline changes`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-baseline-input",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+
+        architectureDrift {
+            baselineFile.set(
+                layout.projectDirectory.file("architecture-drift.baseline")
+            )
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val baselineFile =
+            projectDir.resolve("architecture-drift.baseline")
+
+        Files.writeString(
+            baselineFile,
+            "",
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        class OrderService
+        """.trimIndent(),
+        )
+
+        GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        Files.writeString(
+            baselineFile,
+            "\n",
+        )
+
+        val secondResult = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            secondResult.task(":architectureDriftCheck")?.outcome,
+        )
+    }
 }

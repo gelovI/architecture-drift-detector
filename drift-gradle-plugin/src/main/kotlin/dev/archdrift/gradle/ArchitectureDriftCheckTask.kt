@@ -12,6 +12,8 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import java.nio.file.Files
+import dev.archdrift.application.ViolationBaselineFileLoader
+import org.gradle.api.tasks.Optional
 
 abstract class ArchitectureDriftCheckTask : DefaultTask() {
 
@@ -23,6 +25,10 @@ abstract class ArchitectureDriftCheckTask : DefaultTask() {
 
     @get:OutputFile
     abstract val resultFile: RegularFileProperty
+
+    @get:InputFile
+    @get:Optional
+    abstract val baselineFile: RegularFileProperty
 
     @TaskAction
     fun checkArchitecture() {
@@ -53,8 +59,20 @@ abstract class ArchitectureDriftCheckTask : DefaultTask() {
             architecture = architecture,
         ).detect(sourcePath)
 
-        if (violations.isNotEmpty()) {
-            val diagnostics = violations.joinToString("\n") { violation ->
+        val relevantViolations =
+            if (baselineFile.isPresent) {
+                val baseline = ViolationBaselineFileLoader()
+                    .load(
+                        baselineFile.get().asFile.toPath(),
+                    )
+
+                baseline.newViolations(violations)
+            } else {
+                violations
+            }
+
+        if (relevantViolations.isNotEmpty()) {
+            val diagnostics = relevantViolations.joinToString("\n") { violation ->
                 val dependency = violation.dependency
                 val location = dependency.location
 
@@ -85,9 +103,16 @@ abstract class ArchitectureDriftCheckTask : DefaultTask() {
         val resultPath = resultFile.get().asFile.toPath()
 
         Files.createDirectories(resultPath.parent)
+        val successMessage =
+            if (baselineFile.isPresent) {
+                "No new architecture drift detected.\n"
+            } else {
+                "No architecture drift detected.\n"
+            }
+
         Files.writeString(
             resultPath,
-            "No architecture drift detected.\n",
+            successMessage,
         )
     }
 }

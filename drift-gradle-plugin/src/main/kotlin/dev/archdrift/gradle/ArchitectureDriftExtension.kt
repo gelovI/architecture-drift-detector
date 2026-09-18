@@ -8,4 +8,6 @@ abstract class ArchitectureDriftExtension {
     abstract val architectureFile: RegularFileProperty
 
     abstract val sourceDirectory: DirectoryProperty
+
+    abstract val baselineFile: RegularFileProperty
 }
