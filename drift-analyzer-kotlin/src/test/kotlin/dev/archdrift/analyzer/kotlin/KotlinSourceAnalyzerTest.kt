@@ -572,4 +572,140 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `detects dependency used as generic type argument`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val databases: List<Database>,
+        )
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer().analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                ),
+            ),
+            dependencies,
+        )
+    }
+
+    @Test
+    fun `detects dependencies in function parameter and return type`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+        import dev.shop.infrastructure.Repository
+
+        class OrderService {
+            fun migrate(
+                database: Database,
+            ): Repository {
+                TODO()
+            }
+        }
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer().analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                ),
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Repository",
+                ),
+            ),
+            dependencies,
+        )
+    }
+
+    @Test
+    fun `detects dependency used as nullable type`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database?,
+        )
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer().analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                ),
+            ),
+            dependencies,
+        )
+    }
+
+    @Test
+    fun `detects dependency used in constructor call`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService {
+            private val database = Database()
+        }
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer().analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                ),
+            ),
+            dependencies,
+        )
+    }
+
+    @Test
+    fun `detects dependency used inside function body`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService {
+            fun execute() {
+                val database = Database()
+            }
+        }
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer().analyze(source)
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                ),
+            ),
+            dependencies,
+        )
+    }
 }
