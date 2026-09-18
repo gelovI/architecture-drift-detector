@@ -506,4 +506,36 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `reports one dependency for repeated fully qualified type references`() {
+        val source = """
+        package dev.shop.domain.order
+
+        class OrderService(
+            private val primary: dev.shop.infrastructure.Database,
+            private val secondary: dev.shop.infrastructure.Database,
+        )
+    """.trimIndent()
+
+        val dependencies = KotlinSourceAnalyzer()
+            .analyze(
+                source = source,
+                sourceFile = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+            )
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                    location = SourceLocation(
+                        file = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+                        line = 4,
+                    ),
+                ),
+            ),
+            dependencies,
+        )
+    }
 }

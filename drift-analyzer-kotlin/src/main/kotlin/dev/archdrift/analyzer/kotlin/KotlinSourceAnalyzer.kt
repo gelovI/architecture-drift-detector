@@ -54,6 +54,7 @@ class KotlinSourceAnalyzer {
                             typeReference.getParentOfType<KtClassOrObject>(strict = true) == sourceClass
                         }
                         .filter { "." in it.text }
+                        .distinctBy { it.text }
 
                     val importedDependencies = file.importDirectives
                         .mapNotNull { importDirective ->
