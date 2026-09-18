@@ -6,6 +6,7 @@ import dev.archdrift.core.ForbiddenDependencyRule
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import java.nio.file.Files
 
 class ArchitectureDriftPlugin : Plugin<Project> {
 
@@ -40,6 +41,20 @@ class ArchitectureDriftPlugin : Plugin<Project> {
                             .get()
                             .asFile
                             .toPath()
+
+                    if (!Files.isRegularFile(architectureFile)) {
+                        throw GradleException(
+                            "Architecture drift configuration error: " +
+                                    "architecture file does not exist: $architectureFile",
+                        )
+                    }
+
+                    if (!Files.isDirectory(sourceDirectory)) {
+                        throw GradleException(
+                            "Architecture drift configuration error: " +
+                                    "source directory does not exist: $sourceDirectory",
+                        )
+                    }
 
                     val architecture = ArchitectureFileLoader()
                         .load(architectureFile)

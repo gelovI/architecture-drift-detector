@@ -378,4 +378,90 @@ class ArchitectureDriftPluginTest {
             result.output,
         )
     }
+
+    @Test
+    fun `fails with clear message when architecture file does not exist`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-missing-architecture",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+        """.trimIndent(),
+        )
+
+        val sourceDir = projectDir.resolve("src/main/kotlin")
+        Files.createDirectories(sourceDir)
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .buildAndFail()
+
+        assertTrue(
+            result.output.contains(
+                "Architecture drift configuration error: " +
+                        "architecture file does not exist:",
+            ),
+            result.output,
+        )
+    }
+
+    @Test
+    fun `fails with clear message when source directory does not exist`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-missing-source",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val result = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .buildAndFail()
+
+        assertTrue(
+            result.output.contains(
+                "Architecture drift configuration error: " +
+                        "source directory does not exist:",
+            ),
+            result.output,
+        )
+    }
 }
