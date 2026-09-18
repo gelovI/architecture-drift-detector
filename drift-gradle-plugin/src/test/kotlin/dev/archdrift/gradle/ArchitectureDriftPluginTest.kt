@@ -412,8 +412,14 @@ class ArchitectureDriftPluginTest {
 
         assertTrue(
             result.output.contains(
-                "Architecture drift configuration error: " +
-                        "architecture file does not exist:",
+                "property 'architectureFile' specifies file",
+            ),
+            result.output,
+        )
+
+        assertTrue(
+            result.output.contains(
+                "An input file was expected to be present but it doesn't exist.",
             ),
             result.output,
         )
@@ -458,10 +464,79 @@ class ArchitectureDriftPluginTest {
 
         assertTrue(
             result.output.contains(
-                "Architecture drift configuration error: " +
-                        "source directory does not exist:",
+                "property 'sourceDirectory' specifies directory",
             ),
             result.output,
+        )
+
+        assertTrue(
+            result.output.contains(
+                "An input file was expected to be present but it doesn't exist.",
+            ),
+            result.output,
+        )
+    }
+
+    @Test
+    fun `architecture drift check is up to date when inputs do not change`() {
+        val projectDir = Files.createTempDirectory(
+            "architecture-drift-up-to-date",
+        )
+
+        Files.writeString(
+            projectDir.resolve("settings.gradle.kts"),
+            """
+        rootProject.name = "test-project"
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("build.gradle.kts"),
+            """
+        plugins {
+            id("dev.archdrift")
+        }
+        """.trimIndent(),
+        )
+
+        Files.writeString(
+            projectDir.resolve("architecture.drift"),
+            """
+        component domain dev.shop.domain
+        component infrastructure dev.shop.infrastructure
+        forbid domain -> infrastructure
+        """.trimIndent(),
+        )
+
+        val sourceDir = projectDir.resolve(
+            "src/main/kotlin/dev/shop/domain/order",
+        )
+        Files.createDirectories(sourceDir)
+
+        Files.writeString(
+            sourceDir.resolve("OrderService.kt"),
+            """
+        package dev.shop.domain.order
+
+        class OrderService
+        """.trimIndent(),
+        )
+
+        GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        val secondResult = GradleRunner.create()
+            .withProjectDir(projectDir.toFile())
+            .withArguments("architectureDriftCheck")
+            .withPluginClasspath()
+            .build()
+
+        assertEquals(
+            TaskOutcome.UP_TO_DATE,
+            secondResult.task(":architectureDriftCheck")?.outcome,
         )
     }
 }
