@@ -56,4 +56,32 @@ class DriftCliTest {
             violations,
         )
     }
+
+    @Test
+    fun `preserves source location in detected violation`() {
+        val source = """
+        package dev.shop.domain.order
+
+        import dev.shop.infrastructure.Database
+
+        class OrderService(
+            private val database: Database,
+        )
+    """.trimIndent()
+
+        val violations = DriftCli(
+            architecture = testArchitecture(),
+        ).detect(
+            source = source,
+            sourceFile = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+        )
+
+        assertEquals(
+            listOf(
+                "src/main/kotlin/dev/shop/domain/order/OrderService.kt:6: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+            ),
+            violations,
+        )
+    }
 }

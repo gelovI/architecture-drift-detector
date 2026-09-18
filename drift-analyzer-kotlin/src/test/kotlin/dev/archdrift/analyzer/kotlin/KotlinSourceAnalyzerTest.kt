@@ -473,4 +473,37 @@ class KotlinSourceAnalyzerTest {
             dependencies,
         )
     }
+
+    @Test
+    fun `reports source location for source with CRLF line endings`() {
+        val source = listOf(
+            "package dev.shop.domain.order",
+            "",
+            "import dev.shop.infrastructure.Database",
+            "",
+            "class OrderService(",
+            "    private val database: Database,",
+            ")",
+        ).joinToString("\r\n")
+
+        val dependencies = KotlinSourceAnalyzer()
+            .analyze(
+                source = source,
+                sourceFile = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+            )
+
+        assertEquals(
+            listOf(
+                Dependency(
+                    source = "dev.shop.domain.order.OrderService",
+                    target = "dev.shop.infrastructure.Database",
+                    location = SourceLocation(
+                        file = "src/main/kotlin/dev/shop/domain/order/OrderService.kt",
+                        line = 6,
+                    ),
+                ),
+            ),
+            dependencies,
+        )
+    }
 }

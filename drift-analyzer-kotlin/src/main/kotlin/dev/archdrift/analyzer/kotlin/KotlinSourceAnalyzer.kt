@@ -15,9 +15,13 @@ class KotlinSourceAnalyzer {
     fun analyze(
         source: String,
         sourceFile: String? = null,
-    ): List<Dependency> =
-        KotlinPsiParser().use { parser ->
-            val file = parser.parse(source)
+    ): List<Dependency> {
+        val normalizedSource = source
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+
+        return KotlinPsiParser().use { parser ->
+            val file = parser.parse(normalizedSource)
 
             val packageName = file.packageFqName.asString()
 
@@ -95,6 +99,7 @@ class KotlinSourceAnalyzer {
                     (importedDependencies + fullyQualifiedDependencies).distinct()
                 }
         }
+    }
 
     private fun sourceLocation(
         file: KtFile,
@@ -112,4 +117,4 @@ class KotlinSourceAnalyzer {
                     ?: 1,
             )
         }
-}
+    }

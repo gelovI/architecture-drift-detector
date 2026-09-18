@@ -8,8 +8,15 @@ class DriftCli(
     private val architecture: Architecture,
 ) {
 
-    fun detect(source: String): List<String> {
-        val dependencies = KotlinSourceAnalyzer().analyze(source)
+    fun detect(
+        source: String,
+        sourceFile: String? = null,
+    ): List<String> {
+        val dependencies = KotlinSourceAnalyzer()
+            .analyze(
+                source = source,
+                sourceFile = sourceFile,
+            )
 
         return DriftDetector()
             .detect(
@@ -17,7 +24,15 @@ class DriftCli(
                 architecture = architecture,
             )
             .map { violation ->
-                "${violation.dependency.source} -> ${violation.dependency.target}"
+                val dependency = violation.dependency
+                val location = dependency.location
+
+                if (location == null) {
+                    "${dependency.source} -> ${dependency.target}"
+                } else {
+                    "${location.file}:${location.line}: " +
+                            "${dependency.source} -> ${dependency.target}"
+                }
             }
     }
 }

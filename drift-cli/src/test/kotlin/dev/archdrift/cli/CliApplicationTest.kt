@@ -54,7 +54,8 @@ class CliApplicationTest {
         assertEquals(
             listOf(
                 "Architecture drift detected:",
-                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+                "${sourceFile}:6: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             result.output,
         )
@@ -203,7 +204,8 @@ class CliApplicationTest {
         assertEquals(
             listOf(
                 "Architecture drift detected:",
-                "com.acme.business.order.OrderService -> com.acme.persistence.Database",
+                "${sourceFile}:6: " +
+                        "com.acme.business.order.OrderService -> com.acme.persistence.Database",
             ),
             result.output,
         )
@@ -337,8 +339,11 @@ class CliApplicationTest {
             sourceDirectory.resolve("dev/shop/domain/order"),
         )
 
+        val orderServiceFile =
+            nestedDirectory.resolve("OrderService.kt")
+
         Files.writeString(
-            nestedDirectory.resolve("OrderService.kt"),
+            orderServiceFile,
             """
             package dev.shop.domain.order
 
@@ -361,7 +366,8 @@ class CliApplicationTest {
         assertEquals(
             listOf(
                 "Architecture drift detected:",
-                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+                "${orderServiceFile}:6: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             result.output,
         )

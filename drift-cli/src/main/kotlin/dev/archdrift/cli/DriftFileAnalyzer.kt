@@ -37,6 +37,9 @@ class DriftFileAnalyzer(
 
         return DriftCli(
             architecture = architecture,
-        ).detect(source)
+        ).detect(
+            source = source,
+            sourceFile = sourceFile.toString(),
+        )
     }
 }

@@ -30,7 +30,8 @@ class ArchitectureDriftAcceptanceTest {
         assertEquals(
             listOf(
                 "Architecture drift detected:",
-                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+                "${sourceFile}:6: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             result.output,
         )

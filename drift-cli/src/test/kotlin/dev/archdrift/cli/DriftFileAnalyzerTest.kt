@@ -26,17 +26,14 @@ class DriftFileAnalyzerTest {
             """.trimIndent(),
         )
 
-        val analyzer = DriftFileAnalyzer(
-            architecture = testArchitecture(),
-        )
-
         val violations = DriftFileAnalyzer(
             architecture = testArchitecture(),
         ).detect(sourceFile)
 
         assertEquals(
             listOf(
-                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+                "${sourceFile}:6: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,
         )
@@ -50,8 +47,11 @@ class DriftFileAnalyzerTest {
             sourceDirectory.resolve("dev/shop/domain/order"),
         )
 
+        val orderServiceFile =
+            domainDirectory.resolve("OrderService.kt")
+
         Files.writeString(
-            domainDirectory.resolve("OrderService.kt"),
+            orderServiceFile,
             """
             package dev.shop.domain.order
 
@@ -78,7 +78,8 @@ class DriftFileAnalyzerTest {
 
         assertEquals(
             listOf(
-                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+                "${orderServiceFile}:6: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,
         )
@@ -92,8 +93,11 @@ class DriftFileAnalyzerTest {
             sourceDirectory.resolve("deeply/nested/source"),
         )
 
+        val orderServiceFile =
+            nestedDirectory.resolve("OrderService.kt")
+
         Files.writeString(
-            nestedDirectory.resolve("OrderService.kt"),
+            orderServiceFile,
             """
             package dev.shop.domain.order
 
@@ -111,7 +115,8 @@ class DriftFileAnalyzerTest {
 
         assertEquals(
             listOf(
-                "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
+                "${orderServiceFile}:6: " +
+                        "dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database",
             ),
             violations,
         )
