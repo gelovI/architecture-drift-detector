@@ -1,0 +1,1 @@
+forbid domain -> infrastructure | dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database

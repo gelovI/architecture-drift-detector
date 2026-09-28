@@ -1,3 +1,7 @@
 package dev.shop.domain.order
 
-class OrderService
+import dev.shop.infrastructure.Database
+
+class OrderService(
+    private val database: Database,
+)
