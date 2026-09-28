@@ -8,6 +8,48 @@ The detector can be used from the command line or integrated into Gradle verific
 
 For existing codebases that already contain known architecture violations, a baseline can capture the current drift so CI fails only when new drift is introduced.
 
+## Quick start
+
+Clone the repository and run the complete test suite:
+
+```bash
+git clone https://github.com/gelovI/architecture-drift-detector.git
+cd architecture-drift-detector
+./gradlew clean test
+```
+
+On Windows:
+
+```powershell
+git clone https://github.com/gelovI/architecture-drift-detector.git
+cd architecture-drift-detector
+.\gradlew.bat clean test
+```
+
+Run the detector against the clean example:
+
+```powershell
+.\gradlew.bat :drift-cli:run --args="architecture.drift examples\clean"
+```
+
+Expected result:
+
+```text
+No architecture drift detected.
+```
+
+Then run it against a project containing a forbidden dependency:
+
+```powershell
+.\gradlew.bat :drift-cli:run --args="architecture.drift examples\broken"
+```
+
+The command fails verification and reports the source location, violated rule, and dependency:
+
+```text
+examples\broken\OrderService.kt:6: forbidden dependency domain -> infrastructure: dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database
+```
+
 ## Why
 
 Software architecture can gradually diverge from its intended design as dependencies are introduced during development.
