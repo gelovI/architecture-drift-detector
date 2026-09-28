@@ -220,6 +220,34 @@ drift-application
 drift-cli    drift-gradle-plugin
 ```
 
+### Detection flow
+
+```mermaid
+flowchart TD
+    CLI[CLI]
+    Gradle[Gradle Plugin]
+    App[Application]
+    Analyzer[Kotlin Analyzer]
+    Core[Core Detection]
+    Baseline[Baseline Comparison]
+
+    CLI --> App
+    Gradle --> App
+    App --> Analyzer
+    Analyzer -->|Dependencies| Core
+    App --> Core
+    Core -->|Violations| App
+    App --> Baseline
+    Baseline -->|New violations| CLI
+    Baseline -->|New violations| Gradle
+```
+
+The Kotlin analyzer discovers dependencies from source code using PSI. It does not decide whether those dependencies violate the intended architecture.
+
+Architecture rules and deterministic violation detection belong to the core. The application layer orchestrates source analysis and applies optional baseline comparison before results reach the CLI or Gradle plugin.
+
+This separation keeps source-analysis concerns, architecture policy, baseline workflow, and delivery mechanisms independently testable.
+
 ### `drift-core`
 
 Contains the architecture model, dependency model, rules, violations, and deterministic drift detection.
