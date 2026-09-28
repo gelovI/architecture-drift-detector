@@ -6,6 +6,8 @@ It compares dependencies discovered in Kotlin source code with architecture rule
 
 The detector can be used from the command line or integrated into Gradle verification so architecture drift can fail a normal `check` build in CI.
 
+For existing codebases that already contain known architecture violations, a baseline can capture the current drift so CI fails only when new drift is introduced.
+
 ## Why
 
 Software architecture can gradually diverge from its intended design as dependencies are introduced during development.
@@ -40,6 +42,62 @@ src/main/kotlin/dev/shop/domain/order/OrderService.kt:6: forbidden dependency do
 ```
 
 The result is deterministic and does not require an LLM.
+
+## Architecture baselines
+
+Existing projects may already contain architecture drift that cannot be removed immediately.
+
+A baseline records the identities of known violations so they can be tolerated temporarily while newly introduced violations still fail verification.
+
+For example:
+
+```text
+forbid domain -> infrastructure | dev.shop.domain.order.OrderService -> dev.shop.infrastructure.Database
+```
+
+A baseline identity contains:
+
+```text
+rule + source + target
+```
+
+Source file and line information are deliberately not part of the identity. Moving an existing violation to another line or file therefore does not turn it into new drift.
+
+Baseline comparison is deterministic:
+
+```text
+detected violation in baseline     -> existing drift
+detected violation not in baseline -> new drift
+stale baseline entry               -> ignored
+```
+
+Stale entries do not create violations and are not removed automatically.
+
+### Create a baseline with the CLI
+
+A baseline can be generated from the drift currently detected in a Kotlin file or directory:
+
+```powershell
+.\gradlew.bat :drift-cli:run --args="baseline architecture.drift <kotlin-file-or-directory> architecture-drift.baseline"
+```
+
+The command exits successfully and writes a deterministic baseline containing the currently detected violations.
+
+### Check only for new drift with the CLI
+
+Use the generated baseline when checking a project:
+
+```powershell
+.\gradlew.bat :drift-cli:run --args="check architecture.drift <kotlin-file-or-directory> architecture-drift.baseline"
+```
+
+If every detected violation is already baselined, the command reports:
+
+```text
+No new architecture drift detected.
+```
+
+A violation that is not contained in the baseline is reported with its normal actionable diagnostic and causes a non-zero exit status.
 
 ## Architecture definition
 
@@ -91,7 +149,7 @@ architecture.drift
 src/main/kotlin
 ```
 
-Projects with a different layout can configure both paths:
+Projects with a different layout can configure these paths:
 
 ```kotlin
 architectureDrift {
@@ -102,10 +160,16 @@ architectureDrift {
     sourceDirectory.set(
         layout.projectDirectory.dir("src/main/kotlin")
     )
+
+    baselineFile.set(
+        layout.projectDirectory.file("architecture-drift.baseline")
+    )
 }
 ```
 
-The task declares its architecture definition and source directory as Gradle inputs and supports Gradle up-to-date checking.
+`baselineFile` is optional. Without it, every detected violation fails the check as before. When configured, violations contained in the baseline are tolerated and only new drift fails the build.
+
+The task declares its architecture definition, source directory, and configured baseline as Gradle inputs and supports Gradle up-to-date checking. Changing the baseline invalidates the previous task result.
 
 A local consumer example is available in:
 
@@ -113,7 +177,7 @@ A local consumer example is available in:
 examples/gradle-plugin
 ```
 
-The example resolves the unpublished plugin through a Gradle composite build.
+The example resolves the unpublished plugin through a Gradle composite build and demonstrates a known domain -> infrastructure violation that is tolerated through architecture-drift.baseline.
 
 ## CLI
 
@@ -222,6 +286,7 @@ Architectural decisions are recorded as ADRs:
 3. `docs/adr/0003-use-minimal-text-format-for-architecture-definition.md`
 4. `docs/adr/0004-add-source-context-to-drift-violations.md`
 5. `docs/adr/0005-integrate-architecture-drift-with-gradle-verification.md`
+6. `docs/adr/0006-baseline-existing-architecture-drift.md`
 
 Known technical debt is documented in:
 
@@ -230,13 +295,13 @@ Known technical debt is documented in:
 ## Current scope
 
 The current version focuses on deterministic detection of forbidden dependencies in Kotlin/JVM projects.
+It supports baselining existing violations so teams can introduce architecture verification incrementally and fail CI only for newly introduced drift.
 
 Deliberately deferred areas include:
 
 - semantic Kotlin symbol resolution
 - wildcard import resolution
 - type-alias resolution
-- architecture baselines
 - advanced multi-project Gradle configuration
 - richer architecture-rule DSLs
 - AI-generated explanations or remediation
@@ -248,3 +313,4 @@ These are kept outside the core detection path so the current detector remains d
 - `v1.0.0` - first end-to-end architecture drift detection
 - `v2.0.0` - actionable deterministic diagnostics with source context
 - `v3.0.0` - Gradle/CI integration
+- `v4.0.0` - architecture drift baselines for incremental adoption
